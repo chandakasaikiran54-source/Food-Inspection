@@ -16,9 +16,7 @@ export function createdResponse(res, message = 'Created', data = null) {
 }
 
 export function errorResponse(res, message = 'An error occurred', statusCode = 500, error = null) {
-    const body = { success: false, message };
-    if (error) body.error = error;
-    return res.status(statusCode).json(body);
+    return res.status(statusCode).json({ success: false, message, error });
 }
 
 export function paginatedResponse(res, message, data, { page, limit, total }) {

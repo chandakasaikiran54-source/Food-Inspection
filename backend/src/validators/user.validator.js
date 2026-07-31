@@ -5,7 +5,7 @@
 
 import { z } from 'zod';
 
-const ROLES = ['ADMIN', 'COMMISSIONER', 'SUPERVISOR', 'INSPECTOR'];
+const ROLES = ['ADMIN', 'COMMISSIONER', 'SUPERVISOR', 'INSPECTOR', 'BUSINESS'];
 const STATUSES = ['ACTIVE', 'INACTIVE'];
 
 const passwordSchema = z

@@ -44,6 +44,14 @@ export default function Navbar({ onMenuToggle }) {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
+  const getInitials = (name, role) => {
+    if (!name) return role?.substring(0, 2).toUpperCase() || 'AD';
+    const parts = name.trim().split(' ');
+    return parts.length > 1
+      ? (parts[0][0] + parts[1][0]).toUpperCase()
+      : name.substring(0, 2).toUpperCase();
+  };
+
   const currentTitle = ROUTE_NAMES[location.pathname] || 'Government Portal';
   const unreadAlerts = INITIAL_ALERTS.filter((a) => a.severity === 'CRITICAL' || a.severity === 'HIGH');
 
@@ -184,13 +192,17 @@ export default function Navbar({ onMenuToggle }) {
           <div className="relative">
             <button
               onClick={() => { setShowProfileMenu(!showProfileMenu); setShowNotifications(false); }}
-              className="flex items-center gap-2.5 p-1.5 pr-3 rounded-xl hover:bg-gray-100 transition-colors cursor-pointer"
+              className="flex items-center gap-2.5 p-1.5 pr-3 rounded-full hover:bg-gray-100 transition-colors cursor-pointer"
             >
               <div
-                className="w-8 h-8 rounded-lg flex items-center justify-center font-bold text-xs text-white shadow-sm"
-                style={{ backgroundColor: 'var(--gov-primary)' }}
+                className="w-9 h-9 rounded-full border-2 flex items-center justify-center font-bold text-xs shadow-sm"
+                style={{
+                  backgroundColor: 'var(--gov-primary-subtle)',
+                  color: 'var(--gov-primary)',
+                  borderColor: 'var(--gov-secondary-subtle)'
+                }}
               >
-                {user?.fullName?.[0]?.toUpperCase() ?? 'U'}
+                {getInitials(user?.fullName, user?.role)}
               </div>
               <div className="text-left hidden md:block">
                 <p className="text-xs font-bold leading-tight" style={{ color: 'var(--gov-primary)' }}>

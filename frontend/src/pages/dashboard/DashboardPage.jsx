@@ -168,6 +168,7 @@ export default function DashboardPage() {
       {role === 'INSPECTOR' && <InspectorDashboard navigate={navigate} user={user} />}
       {role === 'SUPERVISOR' && <SupervisorDashboard navigate={navigate} />}
       {role === 'COMMISSIONER' && <CommissionerDashboard navigate={navigate} />}
+      {role === 'BUSINESS' && <ShopOwnerDashboard navigate={navigate} user={user} />}
     </div>
   );
 }
@@ -285,7 +286,7 @@ function InspectorDashboard({ navigate, user }) {
       <HeroCard
         badge="Field Officer Dispatch Hub"
         badgeStyle={{ backgroundColor: 'rgba(129,178,154,0.2)', color: '#a8d5bf', border: '1px solid rgba(129,178,154,0.3)' }}
-        title={`Good day, ${user?.fullName || 'Health Inspector Ravi Kumar'}`}
+        title={`Good day, ${user?.fullName || 'Food Safety Officer Ravi Kumar'}`}
         subtitle="Assigned Ward: MVP Colony & RK Beach. You have 5 scheduled inspections today."
       >
         <button onClick={() => navigate('/inspections?action=new')} className="btn-secondary bg-white/10 text-white border-white/25 hover:bg-white/20">
@@ -496,6 +497,92 @@ function CommissionerDashboard({ navigate }) {
                 <span className="font-bold">{item.value}%</span>
               </div>
             ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════════
+   5. SHOP OWNER DASHBOARD
+══════════════════════════════════════════════════════════════ */
+function ShopOwnerDashboard({ navigate, user }) {
+  const kpis = [
+    { label: 'Business Status', value: 'Active', trend: 'Operational', icon: Activity, accentColor: C.primary, trendBg: 'var(--gov-primary-subtle)', trendColor: C.primary },
+    { label: 'Food License No.', value: 'FSSAI-8910', trend: 'Verified', icon: Building2, accentColor: C.secondary, trendBg: 'var(--gov-secondary-subtle)', trendColor: '#3d7a60' },
+    { label: 'License Expiry', value: 'Dec 2026', trend: 'Valid', icon: Clock, accentColor: C.secondary, trendBg: 'var(--gov-secondary-subtle)', trendColor: '#3d7a60' },
+    { label: 'Last Inspection', value: 'Feb 2026', trend: 'Passed', icon: CheckSquare, accentColor: C.secondary, trendBg: 'var(--gov-secondary-subtle)', trendColor: '#3d7a60' },
+    { label: 'Next Inspection', value: 'Oct 2026', trend: 'Upcoming', icon: Calendar, accentColor: C.highlight, trendBg: 'var(--gov-highlight-subtle)', trendColor: '#8a6e20' },
+    { label: 'Compliance Score', value: '92/100', trend: 'Grade A', icon: Award, accentColor: C.secondary, trendBg: 'var(--gov-secondary-subtle)', trendColor: '#3d7a60' },
+    { label: 'Total Fine Amount', value: '₹0', trend: 'Clear', icon: CheckCircle2, accentColor: C.primary, trendBg: 'var(--gov-primary-subtle)', trendColor: C.primary },
+    { label: 'Pending Fine', value: '₹0', trend: 'No Dues', icon: AlertCircle, accentColor: C.primary, trendBg: 'var(--gov-primary-subtle)', trendColor: C.primary },
+    { label: 'Total Violations', value: '0', trend: 'Safe', icon: ShieldAlert, accentColor: C.secondary, trendBg: 'var(--gov-secondary-subtle)', trendColor: '#3d7a60' },
+    { label: 'Active Notices', value: '2', trend: 'Action Reqd', icon: AlertTriangle, accentColor: C.accent, trendBg: 'var(--gov-accent-subtle)', trendColor: '#a0432e' },
+  ];
+
+  return (
+    <div className="space-y-6 animate-fade-in">
+      <HeroCard
+        badge="Registered Food Business Portal"
+        badgeStyle={{ backgroundColor: 'rgba(242,204,143,0.2)', color: '#f2cc8f', border: '1px solid rgba(242,204,143,0.3)' }}
+        title={`Welcome, ${user?.fullName || 'Shop Owner'}`}
+        subtitle="Manage your FSSAI License, view inspection certificates, and respond to safety alerts."
+      >
+        <button className="btn-secondary bg-white/10 text-white border-white/25 hover:bg-white/20">
+          <Download className="w-4 h-4" /> Download Certificate
+        </button>
+      </HeroCard>
+
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+        {kpis.map((k) => <KpiCard key={k.label} {...k} />)}
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="card-modern lg:col-span-2 space-y-4">
+          <div>
+            <h2 className="text-sm font-bold" style={{ color: C.primary }}>My Business Standing: Compliance %</h2>
+            <p className="text-xs text-gray-500">Historical Tracking of Compliance Score</p>
+          </div>
+          <div className="h-64 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={MONTHLY_TREND_DATA} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="shopGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor={C.secondary} stopOpacity={0.3} />
+                    <stop offset="95%" stopColor={C.secondary} stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#eeecdf" />
+                <XAxis dataKey="month" tickLine={false} axisLine={false} tick={{ fill: '#8a8880', fontSize: 11 }} />
+                <YAxis domain={[0, 100]} tickLine={false} axisLine={false} tick={{ fill: '#8a8880', fontSize: 11 }} />
+                <Tooltip contentStyle={{ backgroundColor: C.primary, borderRadius: '10px', color: '#fff', border: 'none', fontSize: 12 }} />
+                <Area type="monotone" dataKey="inspections" stroke={C.secondary} strokeWidth={2} fill="url(#shopGrad)" name="Score" />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        <div className="card-modern space-y-4">
+          <div>
+            <h2 className="text-sm font-bold" style={{ color: C.primary }}>Recent Safety Notices (Alerts)</h2>
+            <p className="text-xs text-gray-500">Direct notifications from GVMC</p>
+          </div>
+          <div className="space-y-3">
+            <div className="p-3 rounded-xl border flex gap-3 bg-red-50 border-red-200">
+              <AlertTriangle className="w-5 h-5 text-red-500 shrink-0" />
+              <div>
+                <p className="text-xs font-bold text-red-700">Storage hygiene review scheduled</p>
+                <p className="text-[11px] text-red-600 mt-0.5">Please ensure all raw material labels are visible before next week.</p>
+              </div>
+            </div>
+            <div className="p-3 rounded-xl border flex gap-3 bg-blue-50 border-blue-200">
+              <ShieldAlert className="w-5 h-5 text-blue-500 shrink-0" />
+              <div>
+                <p className="text-xs font-bold text-blue-700">License Renewal Reminder</p>
+                <p className="text-[11px] text-blue-600 mt-0.5">Your FSSAI license is valid until Dec 2026. File extensions early.</p>
+              </div>
+            </div>
           </div>
         </div>
       </div>

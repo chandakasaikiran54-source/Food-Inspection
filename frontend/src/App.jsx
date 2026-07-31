@@ -5,7 +5,8 @@
 
 import { RouterProvider } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { Toaster } from 'react-hot-toast';
+import { Toaster, ToastBar, toast } from 'react-hot-toast';
+import { X } from 'lucide-react';
 import { AuthProvider } from './context/AuthContext.jsx';
 import router from './routes/index.jsx';
 import './styles/global.css';
@@ -33,7 +34,28 @@ export default function App() {
                         success: { iconTheme: { primary: '#22c55e', secondary: '#fff' } },
                         error: { iconTheme: { primary: '#ef4444', secondary: '#fff' } },
                     }}
-                />
+                >
+                    {(t) => (
+                        <ToastBar toast={t}>
+                            {({ icon, message }) => (
+                                <>
+                                    {icon}
+                                    {message}
+                                    {t.type !== 'loading' && (
+                                        <button
+                                            type="button"
+                                            onClick={() => toast.dismiss(t.id)}
+                                            aria-label="Close notification"
+                                            className="ml-2 flex items-center justify-center p-1 rounded hover:bg-gray-700 transition-colors duration-200 cursor-pointer text-gray-400 hover:text-white"
+                                        >
+                                            <X className="w-4 h-4" />
+                                        </button>
+                                    )}
+                                </>
+                            )}
+                        </ToastBar>
+                    )}
+                </Toaster>
             </AuthProvider>
         </QueryClientProvider>
     );

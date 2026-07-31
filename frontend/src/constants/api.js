@@ -4,6 +4,7 @@
  */
 export const ENDPOINTS = Object.freeze({
     // Auth
+    SIGNUP: '/auth/signup',
     LOGIN: '/auth/login',
     LOGOUT: '/auth/logout',
     REFRESH: '/auth/refresh',

@@ -4,27 +4,44 @@
  * Connects to MongoDB then starts listening.
  */
 
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
 import app from './src/app.js';
-import { connectDB } from './src/config/db.js';
+import { connectDB, gracefulShutdown } from './src/config/db.js';
+import schedulerService from './src/services/scheduler.service.js';
 import env from './src/config/env.js';
 import logger from './src/utils/logger.js';
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
 async function startServer() {
-    // Connect to MongoDB Atlas first
-    await connectDB();
+    console.log('------------------------------------');
+    console.log('Connecting to MongoDB Atlas...');
+    const dbInfo = await connectDB();
+    console.log(`MongoDB Connected Successfully (v${dbInfo.mongoVersion}) in ${dbInfo.connectTime}ms`);
+    console.log(`Database:\n${dbInfo.conn?.connection?.name || 'food-inspection-monitor'}`);
 
     const server = app.listen(env.port, () => {
-        console.log(`Environment:\n${env.nodeEnv === 'development' ? 'Development' : env.nodeEnv}`);
-        console.log('Server Running');
-        logger.info(`\n🚀 Server running in ${env.nodeEnv} mode on port ${env.port}`);
-        logger.info(`📡 API base: http://localhost:${env.port}/api/v1`);
-        logger.info(`❤️  Health:  http://localhost:${env.port}/api/v1/health\n`);
+        const envStr = env.nodeEnv === 'development' ? 'Development' : env.nodeEnv;
+        console.log(`\nEnvironment:\n${envStr}\n`);
+        console.log('Server Running\n');
+        console.log('API Base:');
+        console.log(`http://localhost:${env.port}/api/v1\n`);
+        console.log('Health Endpoint:');
+        console.log(`http://localhost:${env.port}/api/v1/health`);
+        console.log('------------------------------------');
+
+        // Start Background Jobs immediately and setup 24h cron execution
+        schedulerService.runDailyJobs();
+        setInterval(() => schedulerService.runDailyJobs(), 24 * 60 * 60 * 1000);
     });
 
     const shutdown = async (signal) => {
         logger.info(`${signal} received. Shutting down gracefully…`);
-        server.close(() => {
+        server.close(async () => {
             logger.info('HTTP server closed.');
+            await gracefulShutdown(signal);
             process.exit(0);
         });
     };

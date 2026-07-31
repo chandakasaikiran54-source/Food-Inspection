@@ -11,6 +11,34 @@ import env from '../config/env.js';
 
 class AuthController {
     /**
+     * POST /api/v1/auth/signup
+     */
+    async signup(req, res, next) {
+        try {
+            const { accessToken, refreshToken, user } = await authService.signup(req.body, {
+                ip: req.ip,
+                userAgent: req.headers['user-agent'],
+            });
+
+            // Set refresh token as httpOnly cookie
+            res.cookie('refreshToken', refreshToken, getRefreshCookieOptions());
+
+            return successResponse(res, 'Registration successful', {
+                accessToken,
+                user: {
+                    id: user._id,
+                    fullName: user.fullName,
+                    email: user.email,
+                    role: user.role,
+                    lastLogin: user.lastLogin,
+                },
+            });
+        } catch (err) {
+            next(err);
+        }
+    }
+
+    /**
      * POST /api/v1/auth/login
      */
     async login(req, res, next) {
@@ -75,18 +103,35 @@ class AuthController {
     }
 
     /**
-     * POST /api/v1/auth/forgot-password  (stub – email service in future phase)
+     * POST /api/v1/auth/forgot-password
      */
-    async forgotPassword(req, res) {
-        // Always respond with 200 to prevent email enumeration
-        return successResponse(res, 'If that email exists, a reset link has been sent.');
+    async forgotPassword(req, res, next) {
+        try {
+            await authService.forgotPassword(req.body.email, {
+                ip: req.ip,
+                userAgent: req.headers['user-agent'],
+            });
+            // Always respond with 200 to prevent email enumeration
+            return successResponse(res, 'If that email exists, a reset link has been sent.');
+        } catch (err) {
+            next(err);
+        }
     }
 
     /**
-     * POST /api/v1/auth/reset-password  (stub)
+     * POST /api/v1/auth/reset-password
      */
-    async resetPassword(req, res) {
-        return successResponse(res, 'Password reset functionality will be available soon.');
+    async resetPassword(req, res, next) {
+        try {
+            const { token, password } = req.body;
+            await authService.resetPassword(token, password, {
+                ip: req.ip,
+                userAgent: req.headers['user-agent'],
+            });
+            return successResponse(res, 'Password successfully reset.');
+        } catch (err) {
+            next(err);
+        }
     }
 
     /**

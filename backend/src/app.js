@@ -50,8 +50,10 @@ app.use(cookieParser());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
+// ─── Suppress Favicon Warnings ────────────────────────────────────────────────
+app.get('/favicon.ico', (req, res) => res.status(204).end());
+
 // ─── Logging ──────────────────────────────────────────────────────────────────
-if (env.nodeEnv === 'development') app.use(morgan('dev'));
 app.use(logger);
 
 // ─── Routes ───────────────────────────────────────────────────────────────────

@@ -9,41 +9,6 @@ import { ENDPOINTS } from '../constants/api.js';
 
 const AuthContext = createContext(null);
 
-const DEMO_USERS = {
-  'admin@health.gov': {
-    id: 'demo-admin-1',
-    fullName: 'Dr. Arthur Pendelton',
-    email: 'admin@health.gov',
-    role: 'ADMIN',
-    status: 'ACTIVE',
-    lastLogin: new Date().toISOString(),
-  },
-  'inspector@health.gov': {
-    id: 'demo-insp-1',
-    fullName: 'Officer David Kim',
-    email: 'inspector@health.gov',
-    role: 'INSPECTOR',
-    status: 'ACTIVE',
-    lastLogin: new Date().toISOString(),
-  },
-  'supervisor@health.gov': {
-    id: 'demo-sup-1',
-    fullName: 'Supervisor Mark Sterling',
-    email: 'supervisor@health.gov',
-    role: 'SUPERVISOR',
-    status: 'ACTIVE',
-    lastLogin: new Date().toISOString(),
-  },
-  'commissioner@health.gov': {
-    id: 'demo-comm-1',
-    fullName: 'Commissioner Helena Vance',
-    email: 'commissioner@health.gov',
-    role: 'COMMISSIONER',
-    status: 'ACTIVE',
-    lastLogin: new Date().toISOString(),
-  },
-};
-
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(() => {
     try {
@@ -57,22 +22,9 @@ export function AuthProvider({ children }) {
   // ─── Bootstrap – verify stored token on mount ──────────────────────────────
   useEffect(() => {
     const verify = async () => {
+      // Stop completely if no token exists in local storage organically natively
       const token = localStorage.getItem('accessToken');
       if (!token) {
-        setLoading(false);
-        return;
-      }
-
-      // If using a demo token, do not require backend verification
-      if (token.startsWith('demo-token-')) {
-        const stored = localStorage.getItem('user');
-        if (stored) {
-          try {
-            setUser(JSON.parse(stored));
-          } catch {
-            /* ignore */
-          }
-        }
         setLoading(false);
         return;
       }
@@ -81,22 +33,11 @@ export function AuthProvider({ children }) {
         const { data } = await api.get(ENDPOINTS.ME);
         setUser(data.data);
         localStorage.setItem('user', JSON.stringify(data.data));
-      } catch {
-        // If API fails but we have a stored local user, keep it in demo mode
-        const stored = localStorage.getItem('user');
-        if (stored) {
-          try {
-            setUser(JSON.parse(stored));
-          } catch {
-            localStorage.removeItem('accessToken');
-            localStorage.removeItem('user');
-            setUser(null);
-          }
-        } else {
-          localStorage.removeItem('accessToken');
-          localStorage.removeItem('user');
-          setUser(null);
-        }
+      } catch (error) {
+        // Validation thoroughly failed -> Wipe stored memory elegantly safely cleanly
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('user');
+        setUser(null);
       } finally {
         setLoading(false);
       }
@@ -106,34 +47,16 @@ export function AuthProvider({ children }) {
   }, []);
 
   const login = useCallback(async (credentials) => {
-    const emailKey = credentials?.email?.toLowerCase()?.trim();
-    
-    // Check if backend API is reachable or fallback to demo login
-    try {
-      const { data } = await api.post(ENDPOINTS.LOGIN, credentials);
-      const { accessToken, user: u } = data.data;
-      localStorage.setItem('accessToken', accessToken);
-      localStorage.setItem('user', JSON.stringify(u));
-      api.defaults.headers.common.Authorization = `Bearer ${accessToken}`;
-      setUser(u);
-      return u;
-    } catch (err) {
-      // Backend offline or error -> Fallback to Dummy / Demo User
-      const demoUser = DEMO_USERS[emailKey] || {
-        id: `demo-user-${Date.now()}`,
-        fullName: credentials?.email?.split('@')[0]?.replace('.', ' ')?.toUpperCase() || 'Health Officer',
-        email: credentials?.email || 'officer@health.gov',
-        role: 'ADMIN',
-        status: 'ACTIVE',
-        lastLogin: new Date().toISOString(),
-      };
+    // Check real backend API natively robustly inherently securely
+    const { data } = await api.post(ENDPOINTS.LOGIN, credentials);
+    const { accessToken, user: u } = data.data;
 
-      const demoToken = `demo-token-${Date.now()}`;
-      localStorage.setItem('accessToken', demoToken);
-      localStorage.setItem('user', JSON.stringify(demoUser));
-      setUser(demoUser);
-      return demoUser;
-    }
+    localStorage.setItem('accessToken', accessToken);
+    localStorage.setItem('user', JSON.stringify(u));
+    api.defaults.headers.common.Authorization = `Bearer ${accessToken}`;
+
+    setUser(u);
+    return u;
   }, []);
 
   const logout = useCallback(async () => {

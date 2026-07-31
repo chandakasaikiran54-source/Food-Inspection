@@ -13,36 +13,54 @@ const RETRY_DELAY = 5000; // ms
 let retryCount = 0;
 
 export async function connectDB() {
+    const startTime = Date.now();
     try {
-        console.log('Connecting to MongoDB Atlas...');
-
         const conn = await mongoose.connect(env.mongoUri, {
             maxPoolSize: 10,
-            serverSelectionTimeoutMS: 5000,
+            serverSelectionTimeoutMS: 30000,
+            connectTimeoutMS: 30000,
             socketTimeoutMS: 45000,
         });
 
+        const connectTime = Date.now() - startTime;
         retryCount = 0;
-        console.log('MongoDB Connected Successfully');
 
-        const dbName = conn.connection.name;
-        console.log(`Database:\n${dbName}`);
+        let mongoVersion = 'unknown';
+        try {
+            const admin = conn.connection.db.admin();
+            const buildInfo = await admin.buildInfo();
+            mongoVersion = buildInfo.version;
+        } catch (e) {
+            // ignore if permissions don't allow buildInfo
+        }
 
-        return conn;
+        // These listeners will persist after the initial connection
+        if (!mongoose.connection.listenerCount('disconnected')) {
+            mongoose.connection.on('connected', () => logger.info('MongoDB connected natively.'));
+            mongoose.connection.on('disconnected', () => logger.warn('MongoDB disconnected. Mongoose attempting automatic reconnection...'));
+            mongoose.connection.on('reconnected', () => logger.info('MongoDB reconnected successfully.'));
+            mongoose.connection.on('error', (err) => logger.error(`MongoDB underlying connection error: ${err.message}`));
+        }
+
+        return { conn, connectTime, mongoVersion };
     } catch (err) {
         retryCount++;
-        logger.error(`MongoDB connection failed (attempt ${retryCount}): ${err.message}`);
+        const isTransient = err.message.includes('ENOTFOUND') || err.message.includes('ETIMEDOUT') || err.name === 'MongooseServerSelectionError';
 
-        // Handle specific errors
-        if (err.message.includes('Authentication failed') || err.message.includes('bad auth')) {
-            logger.error('Invalid Username or Password for MongoDB Atlas.');
-        } else if (err.message.includes('ENOTFOUND') || err.message.includes('ETIMEDOUT') || err.name === 'MongooseServerSelectionError') {
-            logger.error('Network Failure or MongoDB is Down/Unreachable.');
+        if (isTransient && retryCount < MAX_RETRIES) {
+            logger.warn(`MongoDB transient network failure (attempt ${retryCount}): ${err.message}. Retrying...`);
+        } else {
+            if (err.message.includes('Authentication failed') || err.message.includes('bad auth')) {
+                logger.error('Invalid Username or Password for MongoDB Atlas.');
+            } else {
+                logger.error(`MongoDB connection failed (attempt ${retryCount}): ${err.message}`);
+            }
         }
 
         if (retryCount < MAX_RETRIES) {
-            logger.info(`Retrying Connection in ${RETRY_DELAY / 1000}s…`);
-            await new Promise((r) => setTimeout(r, RETRY_DELAY));
+            const backoffDelay = Math.min(Math.pow(2, retryCount) * 1000, 30000); // Exponential backoff max 30s
+            logger.info(`Retrying Connection in ${backoffDelay / 1000}s…`);
+            await new Promise((r) => setTimeout(r, backoffDelay));
             return connectDB();
         }
 
@@ -57,14 +75,8 @@ export function getDBStatus() {
 }
 
 // Graceful shutdown
-async function gracefulShutdown(signal) {
-    logger.info(`${signal} received – closing MongoDB connection`);
+export async function gracefulShutdown(signal) {
+    logger.info(`${signal} received – closing MongoDB connection safely`);
     await mongoose.connection.close();
-    logger.info('MongoDB connection closed');
+    logger.info('MongoDB connection closed completely');
 }
-
-process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
-process.on('SIGINT', () => gracefulShutdown('SIGINT'));
-
-mongoose.connection.on('disconnected', () => logger.warn('MongoDB disconnected'));
-mongoose.connection.on('reconnected', () => logger.info('MongoDB reconnected'));

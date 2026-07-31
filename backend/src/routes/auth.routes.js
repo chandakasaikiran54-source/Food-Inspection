@@ -8,6 +8,7 @@ import authController from '../controllers/auth.controller.js';
 import authenticate from '../middleware/auth.middleware.js';
 import validate from '../middleware/validate.middleware.js';
 import {
+    signupSchema,
     loginSchema,
     forgotPasswordSchema,
     resetPasswordSchema,
@@ -17,6 +18,7 @@ import {
 const router = Router();
 
 // Public
+router.post('/signup', validate(signupSchema), authController.signup.bind(authController));
 router.post('/login', validate(loginSchema), authController.login.bind(authController));
 router.post('/refresh', authController.refresh.bind(authController));
 router.post('/forgot-password', validate(forgotPasswordSchema), authController.forgotPassword.bind(authController));

@@ -96,6 +96,17 @@ export class UserRepository {
     findByRefreshToken(token) {
         return User.findOne({ refreshToken: token, deletedAt: null }).select('+refreshToken');
     }
+
+    /**
+     * Find by password reset token
+     */
+    findByPasswordResetToken(hashedToken) {
+        return User.findOne({
+            passwordResetToken: hashedToken,
+            passwordResetExpires: { $gt: Date.now() },
+            deletedAt: null
+        });
+    }
 }
 
 export default new UserRepository();

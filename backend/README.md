@@ -1,42 +1,49 @@
-# Backend API - Food Safety Inspection Monitoring System
+# Food Safety Inspection Monitoring System (Backend API)
 
-This is the backend API for the Food Safety Inspection Monitoring System, built with Node.js, Express, and MongoDB Atlas.
+## Overview
+A comprehensive regulatory backend powering Government Food Inspection logic securely mapped atop Node.js, Express, and MongoDB. System supports intricate aggregation Math, Role-Based Access controls masking hierarchical data, and strict interval mappings.
 
-## Setting Up MongoDB Atlas 🚀
+## Dependencies
+- Node.js (v18+)
+- MongoDB Atlas (or local Mongoose URI equivalent)
+- Redis (bull queue adapters configured internally)
 
-Follow these steps to configure your MongoDB Atlas cluster correctly for this project:
+## Installation & Setup
+1. Clone the repository and navigate into `/backend`.
+2. Generate base dependencies: 
+   ```bash
+   npm install
+   ```
+3. Initialize the `.env` configuration file locally inside the root matching `PORT`, `MONGO_URI`, and `JWT_SECRET`.
+4. Deploy the comprehensive Hackathon mock arrays:
+   ```bash
+   npm run seed
+   ```
 
-### 1. Create a MongoDB Atlas Cluster
-- Go to [MongoDB Atlas](https://www.mongodb.com/cloud/atlas) and sign up/log in.
-- Click **Build a Database** (Choose the Free/Shared `M0` cluster).
-- Select your preferred cloud provider and region, then click **Create Cluster**.
-
-### 2. Create Database User
-- In the left sidebar, under **Security**, click **Database Access**.
-- Click **ADD NEW DATABASE USER**.
-- Choose Password authentication.
-- Create a **Username** and **Password** (Make sure to save it safely).
-- Set privileges to **Read and write to any database**.
-- Click **Add User**.
-
-### 3. Whitelist your IP Address
-- Under **Security**, click **Network Access**.
-- Click **ADD IP ADDRESS**.
-- Click **Allow Access from Anywhere** (Optionally choose `Add Current IP Address` if you want it stricter).
-- Click **Confirm**.
-
-### 4. Running the Backend
-1. Modify `backend/.env` with your newly created Database Credentials:
-```env
-DB_USERNAME=your_created_username
-DB_PASSWORD=your_created_password
+## Running the Application
+Development Engine (Nodemon):
+```bash
+npm run dev
 ```
-2. Run `npm install` inside the `backend` directory.
-3. Run `npm run dev` to start the backend. The backend will dynamically plug your credentials into the `MONGO_URI`.
+Production Engine:
+```bash
+npm start
+``` 
 
-### 5. Running the Frontend
-1. Open a new terminal and navigate to the `frontend` directory.
-2. Run `npm install`.
-3. Run `npm run dev`.
+## Docker Deployment
+Orchestrate natively using the provided multi-stage configurations cleanly mapping container contexts locally natively:
+```bash
+docker-compose up --build -d
+```
 
-*You are now fully connected with MongoDB Atlas!*
+## Hackathon Demo Login Scenarios
+The database seeder produces realistic arrays simulating live government mapping limits dynamically. 
+The specific Inspector load tests uniquely mapped via:
+- **Email:** `inspector1@gvmc.gov.in` (up to inspector20@gvmc.gov.in)
+- **Password:** `Admin@123`
+- **Role Limits:** System checks token constraints automatically isolating only Ward/Schedule arrays belonging to these mock users intrinsically cleanly.
+
+## Key Modules Delivered
+1. **RBAC Engine:** Distinct `ADMIN`, `SUPERVISOR`, `COMMISSIONER`, and `INSPECTOR` endpoints securely bounding queries.
+2. **Frequency Engine / Alerts:** Native Interval calculation blocks and Cron-level processing safely checking DB contexts implicitly automatically triggering.
+3. **Analytics Tracking:** Granular MongoDB arrays tracking Live Dashboards extracting metric pipelines inherently bypassing `N+1` boundaries.

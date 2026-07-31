@@ -5,11 +5,73 @@
  */
 
 import userRepository from '../repositories/user.repository.js';
+import FoodBusiness from '../models/FoodBusiness.model.js';
 import { signAccessToken, signRefreshToken, verifyRefreshToken, getRefreshCookieOptions } from '../utils/jwt.js';
 import AuditLog from '../models/AuditLog.model.js';
 import logger from '../utils/logger.js';
 
 class AuthService {
+    /**
+     * Signup – registers a new user organically validating rules explicitly
+     */
+    async signup(payload, { ip, userAgent }) {
+        const { email, password, fullName, role, phone, department, alternatePhone, govIdType, govIdNumber, foodBusinessName, foodBusinessLicenseNumber, businessType, shopNumber, streetArea, villageLocality, mandal, district, state, pincode, landmark, latitude, longitude, gstNumber, fssaiLicenseNumber, tradeLicense, businessOpeningDate, numberOfEmployees } = payload;
+
+        // Ensure email isn't duplicated
+        const existing = await userRepository.findByEmail(email);
+        if (existing) {
+            await this._auditFailed(null, email, 'SIGNUP_FAILED', ip, userAgent, 'Email already exists');
+            throw Object.assign(new Error('Email is already registered'), { status: 409 });
+        }
+
+        if (role === 'BUSINESS') {
+            const existingBusiness = await FoodBusiness.findOne({ $or: [{ licenseNumber: foodBusinessLicenseNumber }, { phone }] });
+            if (existingBusiness) {
+                await this._auditFailed(null, email, 'SIGNUP_FAILED', ip, userAgent, 'Duplicate Business phone or license');
+                throw Object.assign(new Error('A business with this phone or license number already exists'), { status: 409 });
+            }
+        }
+
+        // Create the user organically
+        const user = await userRepository.create({
+            fullName, email, password, role, phone, department, alternatePhone, govIdType, govIdNumber
+        });
+
+        if (role === 'BUSINESS') {
+            const business = await FoodBusiness.create({
+                businessName: foodBusinessName,
+                licenseNumber: foodBusinessLicenseNumber,
+                businessType,
+                foodCategory: 'General',
+                ownerName: fullName,
+                phone,
+                email,
+                ownerId: user._id,
+                shopNumber, streetArea, villageLocality, mandal, district, state, pincode, landmark,
+                latitude, longitude, gstNumber, fssaiLicenseNumber, tradeLicense, businessOpeningDate, numberOfEmployees,
+                createdBy: user._id
+            });
+            user.businessId = business._id;
+            await user.save({ validateBeforeSave: false }); // Skip validation properly since it's already validated
+        }
+
+        logger.info(`New user signed up: ${email} (${role})`);
+        await AuditLog.create({
+            userId: user._id, userEmail: email, userRole: role,
+            action: 'USER_CREATED', module: 'AUTH', description: 'User registration successful',
+            ipAddress: ip, userAgent,
+        });
+
+        const tokenPayload = { id: user._id, role: user.role, email: user.email };
+        const accessToken = signAccessToken(tokenPayload);
+        const refreshToken = signRefreshToken({ id: user._id });
+
+        await userRepository.updateRefreshToken(user._id, refreshToken);
+        await userRepository.updateLastLogin(user._id);
+
+        return { accessToken, refreshToken, user };
+    }
+
     /**
      * Login – validates credentials, issues access + refresh tokens
      */
@@ -95,6 +157,62 @@ class AuthService {
         });
 
         return { accessToken: newAccess, refreshToken: newRefresh, user };
+    }
+
+    async forgotPassword(email, meta) {
+        const user = await userRepository.findByEmail(email).then((u) =>
+            u ? u.constructor.findByEmail(email) : null
+        );
+
+        if (!user) {
+            // Silently complete to prevent email enumeration effectively safely correctly!
+            logger.warn(`Password reset requested for unknown email: ${email}`);
+            return;
+        }
+
+        const resetToken = await user.createPasswordResetToken();
+        await user.save({ validateBeforeSave: false });
+
+        // Future phase: Email Dispatcher integration natively securely here
+        const resetURL = `${env.frontendUrl || 'http://localhost:3000'}/reset-password/${resetToken}`;
+        logger.info(`Secure Reset Token Generated for ${user.email}. Link: ${resetURL}`);
+
+        await AuditLog.create({
+            userId: user._id, userEmail: user.email, userRole: user.role,
+            action: 'PASSWORD_RESET_REQUESTED', module: 'AUTH',
+            description: 'Password reset email triggered',
+            ipAddress: meta.ip, userAgent: meta.userAgent,
+        });
+    }
+
+    async resetPassword(token, newPassword, meta) {
+        const crypto = await import('crypto');
+        const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+
+        // Dynamically locate user via mongoose tracking native schema models gracefully!
+        const user = await userRepository.findByPasswordResetToken(hashedToken);
+
+        if (!user) {
+            throw Object.assign(new Error('Token is invalid or has expired'), { status: 400 });
+        }
+
+        user.password = newPassword;
+        user.passwordResetToken = undefined;
+        user.passwordResetExpires = undefined;
+
+        await user.save(); // pre-save hook handles hashing the new password gracefully
+
+        // Invalidate old refresh tokens forcing a fresh session cleanly dynamically
+        await userRepository.updateRefreshToken(user._id, null);
+
+        logger.info(`Password successfully reset for ${user.email}`);
+
+        await AuditLog.create({
+            userId: user._id, userEmail: user.email, userRole: user.role,
+            action: 'PASSWORD_RESET_COMPLETED', module: 'AUTH',
+            description: 'Password reset successfully executed',
+            ipAddress: meta.ip, userAgent: meta.userAgent,
+        });
     }
 
     // ─── Helpers ──────────────────────────────────────────────────────────────

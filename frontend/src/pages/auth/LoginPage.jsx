@@ -9,7 +9,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext.jsx';
 import GvmcLogo from '../../components/layout/GvmcLogo.jsx';
 import toast from 'react-hot-toast';
@@ -23,6 +23,7 @@ import {
   CheckCircle2,
   Building2,
   Award,
+  AlertTriangle,
 } from 'lucide-react';
 
 const schema = z.object({
@@ -30,17 +31,21 @@ const schema = z.object({
   password: z.string().min(1, 'Password is required'),
 });
 
-const DEMO_ACCOUNTS = [
-  { role: 'ADMIN', label: 'System Administrator', email: 'admin@health.gov' },
-  { role: 'INSPECTOR', label: 'Health Inspector', email: 'inspector@health.gov' },
-  { role: 'SUPERVISOR', label: 'Supervisor', email: 'supervisor@health.gov' },
-  { role: 'COMMISSIONER', label: 'Commissioner', email: 'commissioner@health.gov' },
-];
+// Demo accounts removed for strictly authenticated production deployments
 
 export default function LoginPage() {
   const { login } = useAuth();
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
+  const [capsLockActive, setCapsLockActive] = useState(false);
+
+  const checkCapsLock = (e) => {
+    if (e.getModifierState('CapsLock')) {
+      setCapsLockActive(true);
+    } else {
+      setCapsLockActive(false);
+    }
+  };
 
   const {
     register,
@@ -52,27 +57,13 @@ export default function LoginPage() {
     defaultValues: { email: 'admin@health.gov', password: 'password123' },
   });
 
-  const handleQuickSelect = async (email) => {
-    setValue('email', email, { shouldValidate: true });
-    setValue('password', 'password123', { shouldValidate: true });
-    try {
-      await login({ email, password: 'password123' });
-      toast.success(`Logged in as ${email}`);
-      navigate('/', { replace: true });
-    } catch {
-      toast.success(`Logged in as ${email}`);
-      navigate('/', { replace: true });
-    }
-  };
-
   const onSubmit = async (data) => {
     try {
       await login(data);
-      toast.success('Welcome to Food Safety Inspection Portal!');
+      toast.success('Welcome to Food Safety Inspection Portal!', { icon: '👋' });
       navigate('/', { replace: true });
-    } catch {
-      toast.success('Signed in successfully!');
-      navigate('/', { replace: true });
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Invalid email or password.');
     }
   };
 
@@ -157,35 +148,8 @@ export default function LoginPage() {
             </p>
           </div>
 
-          {/* Quick Demo Accounts */}
-          <div
-            className="p-4 rounded-2xl border space-y-3"
-            style={{ backgroundColor: 'rgba(61,64,91,0.04)', borderColor: 'rgba(61,64,91,0.15)' }}
-          >
-            <p className="text-xs font-semibold" style={{ color: 'var(--gov-primary)' }}>
-              Quick Demo Role Login:
-            </p>
-            <div className="grid grid-cols-2 gap-2">
-              {DEMO_ACCOUNTS.map(({ role, label, email }) => (
-                <button
-                  key={role}
-                  type="button"
-                  onClick={() => handleQuickSelect(email)}
-                  className="text-left p-2.5 rounded-xl border text-xs font-semibold transition-all cursor-pointer hover:shadow-sm"
-                  style={{
-                    backgroundColor: 'white',
-                    borderColor: 'var(--gov-secondary)',
-                    color: 'var(--gov-primary)',
-                  }}
-                  onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'var(--gov-secondary-subtle)'; }}
-                  onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'white'; }}
-                >
-                  <p className="font-bold">{label}</p>
-                  <p className="text-[10px] opacity-70 truncate mt-0.5">{email}</p>
-                </button>
-              ))}
-            </div>
-          </div>
+          {/* Main spacer */}
+          <div className="py-2" />
 
           {/* Form */}
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-5" noValidate>
@@ -224,6 +188,8 @@ export default function LoginPage() {
                   className="input-field pl-10 pr-10"
                   style={errors.password ? { borderColor: 'var(--gov-accent)' } : {}}
                   {...register('password')}
+                  onKeyUp={checkCapsLock}
+                  onKeyDown={checkCapsLock}
                 />
                 <button
                   type="button"
@@ -233,11 +199,38 @@ export default function LoginPage() {
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
+              {capsLockActive && (
+                <p className="text-[10px] mt-1.5 font-bold flex items-center gap-1" style={{ color: 'var(--gov-highlight)' }}>
+                  <AlertTriangle className="w-3 h-3" /> CAPSLOCK IS ON
+                </p>
+              )}
               {errors.password && (
                 <p className="text-xs mt-1.5 font-medium" style={{ color: 'var(--gov-accent)' }}>
                   {errors.password.message}
                 </p>
               )}
+            </div>
+
+            {/* Extras */}
+            <div className="flex items-center justify-between pt-1">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  className="w-3.5 h-3.5 rounded border-gray-300"
+                  style={{ accentColor: 'var(--gov-primary)' }}
+                  {...register('rememberMe')}
+                />
+                <span className="text-xs font-semibold text-gray-600">Remember Me</span>
+              </label>
+
+              <button
+                type="button"
+                onClick={() => toast('Forgot Password functionality will be enabled soon.', { icon: 'ℹ️' })}
+                className="text-xs font-semibold hover:underline transition-all"
+                style={{ color: 'var(--gov-primary)' }}
+              >
+                Forgot Password?
+              </button>
             </div>
 
             {/* Submit */}
@@ -258,6 +251,13 @@ export default function LoginPage() {
               )}
             </button>
           </form>
+
+          <p className="text-center text-xs font-semibold text-gray-600 mt-5 mb-2">
+            Don't have an account?{' '}
+            <Link to="/signup" style={{ color: 'var(--gov-primary)' }} className="hover:underline ml-1">
+              Create one now
+            </Link>
+          </p>
 
           <p className="text-xs text-center text-gray-400">
             Protected by SSL encryption. GVMC Authorized Access Only.

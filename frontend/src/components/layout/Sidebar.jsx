@@ -22,18 +22,29 @@ import {
   LogOut,
   ShieldCheck,
   ChevronRight,
+  AlertTriangle,
+  Award,
 } from 'lucide-react';
 
 const NAV_ITEMS = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard', roles: null },
-  { to: '/businesses', icon: Building2, label: 'Food Businesses', roles: null },
-  { to: '/inspections', icon: ClipboardCheck, label: 'Inspections', roles: null, badge: '5 New' },
-  { to: '/inspectors', icon: UserCheck, label: 'Inspectors', roles: ['ADMIN', 'SUPERVISOR'] },
-  { to: '/alerts', icon: Bell, label: 'Safety Alerts', roles: null, badge: 'Critical', badgeColor: 'bg-red-500/20 text-red-300 border-red-500/30' },
+  { to: '/business-profile', icon: Building2, label: 'My Business', roles: ['BUSINESS'] },
+  { to: '/businesses', icon: Building2, label: 'Food Businesses', roles: ['ADMIN', 'SUPERVISOR', 'COMMISSIONER', 'INSPECTOR'] },
+  { to: '/inspections', icon: ClipboardCheck, label: 'Inspections', roles: ['ADMIN', 'SUPERVISOR', 'COMMISSIONER', 'INSPECTOR'], badge: '5 New' },
+  { to: '/inspection-history', icon: ClipboardCheck, label: 'Inspection History', roles: ['BUSINESS'] },
+  { to: '/violations', icon: AlertTriangle, label: 'Violations', roles: ['BUSINESS'] },
+  { to: '/fines', icon: FileBarChart, label: 'Fines & Payments', roles: ['BUSINESS'] },
+  { to: '/license', icon: ClipboardCheck, label: 'License', roles: ['BUSINESS'] },
+  { to: '/compliance', icon: TrendingUp, label: 'Compliance Status', roles: ['BUSINESS'] },
+  { to: '/certificates', icon: Award, label: 'Certificates', roles: ['BUSINESS'] },
+  { to: '/alerts', icon: Bell, label: 'Safety Alerts', roles: ['ADMIN', 'SUPERVISOR', 'COMMISSIONER', 'INSPECTOR'], badge: 'Critical', badgeColor: 'bg-red-500/20 text-red-300 border-red-500/30' },
+  { to: '/notifications', icon: Bell, label: 'Notifications', roles: ['BUSINESS'], badge: '1 New', badgeColor: 'bg-red-500/20 text-red-300 border-red-500/30' },
   { to: '/reports', icon: FileBarChart, label: 'Reports', roles: ['ADMIN', 'COMMISSIONER', 'SUPERVISOR'] },
   { to: '/analytics', icon: TrendingUp, label: 'Analytics', roles: ['ADMIN', 'COMMISSIONER'] },
+  { to: '/documents', icon: ShieldCheck, label: 'Documents', roles: ['BUSINESS'] },
+  { to: '/support', icon: Users, label: 'Help & Support', roles: ['BUSINESS'] },
   { to: '/users', icon: Users, label: 'User Directory', roles: ['ADMIN'] },
-  { to: '/settings', icon: Settings, label: 'Settings', roles: ['ADMIN'] },
+  { to: '/settings', icon: Settings, label: 'Settings', roles: null },
 ];
 
 export default function Sidebar({ isOpen, onClose }) {
@@ -44,6 +55,14 @@ export default function Sidebar({ isOpen, onClose }) {
     await logout();
     toast.success('Logged out successfully');
     navigate('/login', { replace: true });
+  };
+
+  const getInitials = (name, role) => {
+    if (!name) return role?.substring(0, 2).toUpperCase() || 'AD';
+    const parts = name.trim().split(' ');
+    return parts.length > 1
+      ? (parts[0][0] + parts[1][0]).toUpperCase()
+      : name.substring(0, 2).toUpperCase();
   };
 
   const visibleItems = NAV_ITEMS.filter(({ roles }) => !roles || roles.includes(user?.role));
@@ -125,10 +144,10 @@ export default function Sidebar({ isOpen, onClose }) {
             className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-white/8 transition-all group"
           >
             <div
-              className="w-9 h-9 rounded-xl flex items-center justify-center font-bold text-sm shrink-0 text-white shadow"
-              style={{ backgroundColor: 'var(--gov-secondary)' }}
+              className="w-10 h-10 rounded-full border-2 flex items-center justify-center font-bold text-sm shrink-0 text-white shadow"
+              style={{ backgroundColor: 'var(--gov-secondary)', borderColor: 'rgba(255,255,255,0.2)' }}
             >
-              {user?.fullName?.[0]?.toUpperCase() ?? 'U'}
+              {getInitials(user?.fullName, user?.role)}
             </div>
             <div className="min-w-0 flex-1">
               <p className="text-white text-xs font-semibold truncate">

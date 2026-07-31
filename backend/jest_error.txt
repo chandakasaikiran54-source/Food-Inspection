@@ -1,0 +1,150 @@
+﻿node : (node:14320) ExperimentalWarning: VM 
+Modules is an experimental feature and might 
+change at any time
+At line:1 char:1
++ node --experimental-vm-modules 
+node_modules/jest/bin/jest.js tests/ap ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ((no 
+   de:14320) Ex...nge at any time:String) [], R  
+  emoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+(Use `node --trace-warnings ...` to show where 
+the warning was created)
+FAIL tests/api/business.test.js (11.726 s)
+  ΓùÅ Business API ΓÇ║ should prevent 
+unauthorized access
+
+    thrown: "Exceeded timeout of 5000 ms for a 
+hook.
+    Add a timeout value to this test to increase 
+the timeout, if this is a long-running test. See 
+https://jestjs.io/docs/api#testname-fn-timeout."
+
+    [0m [90m 10 |[39m     [36mlet[39m 
+businessId[33m;[39m
+     [90m 11 |[39m
+    [31m[1m>[22m[39m[90m 12 |[39m     
+beforeAll([36masync[39m () [33m=>[39m {
+     [90m    |[39m     [31m[1m^[22m[39m
+     [90m 13 |[39m         [90m// Assume 
+connected from global setup or connect here if 
+needed.[39m
+     [90m 14 |[39m         [90m// For 
+simplicity and since server.js connects 
+globally, [39m
+     [90m 15 |[39m         [90m// we'll run 
+against the actual DB. Normally we'd use 
+MongoMemoryServer.[39m[0m
+
+      at beforeAll 
+(tests/api/business.test.js:12:5)
+      at describe 
+(tests/api/business.test.js:8:1)
+
+  ΓùÅ Business API ΓÇ║ should create a new 
+business securely
+
+    thrown: "Exceeded timeout of 5000 ms for a 
+hook.
+    Add a timeout value to this test to increase 
+the timeout, if this is a long-running test. See 
+https://jestjs.io/docs/api#testname-fn-timeout."
+
+    [0m [90m 10 |[39m     [36mlet[39m 
+businessId[33m;[39m
+     [90m 11 |[39m
+    [31m[1m>[22m[39m[90m 12 |[39m     
+beforeAll([36masync[39m () [33m=>[39m {
+     [90m    |[39m     [31m[1m^[22m[39m
+     [90m 13 |[39m         [90m// Assume 
+connected from global setup or connect here if 
+needed.[39m
+     [90m 14 |[39m         [90m// For 
+simplicity and since server.js connects 
+globally, [39m
+     [90m 15 |[39m         [90m// we'll run 
+against the actual DB. Normally we'd use 
+MongoMemoryServer.[39m[0m
+
+      at beforeAll 
+(tests/api/business.test.js:12:5)
+      at describe 
+(tests/api/business.test.js:8:1)
+
+  ΓùÅ Business API ΓÇ║ should list businesses 
+with pagination info
+
+    thrown: "Exceeded timeout of 5000 ms for a 
+hook.
+    Add a timeout value to this test to increase 
+the timeout, if this is a long-running test. See 
+https://jestjs.io/docs/api#testname-fn-timeout."
+
+    [0m [90m 10 |[39m     [36mlet[39m 
+businessId[33m;[39m
+     [90m 11 |[39m
+    [31m[1m>[22m[39m[90m 12 |[39m     
+beforeAll([36masync[39m () [33m=>[39m {
+     [90m    |[39m     [31m[1m^[22m[39m
+     [90m 13 |[39m         [90m// Assume 
+connected from global setup or connect here if 
+needed.[39m
+     [90m 14 |[39m         [90m// For 
+simplicity and since server.js connects 
+globally, [39m
+     [90m 15 |[39m         [90m// we'll run 
+against the actual DB. Normally we'd use 
+MongoMemoryServer.[39m[0m
+
+      at beforeAll 
+(tests/api/business.test.js:12:5)
+      at describe 
+(tests/api/business.test.js:8:1)
+
+
+  ΓùÅ Test suite failed to run
+
+    thrown: "Exceeded timeout of 5000 ms for a 
+hook.
+    Add a timeout value to this test to increase 
+the timeout, if this is a long-running test. See 
+https://jestjs.io/docs/api#testname-fn-timeout."
+
+    [0m [90m 26 |[39m     })[33m;[39m
+     [90m 27 |[39m
+    [31m[1m>[22m[39m[90m 28 |[39m     
+afterAll([36masync[39m () [33m=>[39m {
+     [90m    |[39m     [31m[1m^[22m[39m
+     [90m 29 |[39m         [36mawait[39m 
+[33mUser[39m[33m.[39mdeleteMany({ 
+email[33m:[39m [35m/@test.gov$/[39m 
+})[33m;[39m
+     [90m 30 |[39m         [36mawait[39m 
+[33mFoodBusiness[39m[33m.[39mdeleteMany({ 
+licenseNumber[33m:[39m [35m/^TEST-/[39m 
+})[33m;[39m
+     [90m 31 |[39m         [36mawait[39m mong
+oose[33m.[39mconnection[33m.[39mclose()[33m;
+[39m[0m
+
+      at afterAll 
+(tests/api/business.test.js:28:5)
+      at describe 
+(tests/api/business.test.js:8:1)
+
+Test Suites: 1 failed, 1 total
+Tests:       3 failed, 3 total
+Snapshots:   0 total
+Time:        11.798 s, estimated 13 s
+Ran all test suites matching 
+/tests\\api\\business.test.js/i.
+Jest did not exit one second after the test run 
+has completed.
+
+'This usually means that there are asynchronous 
+operations that weren't stopped in your tests. 
+Consider running Jest with `--detectOpenHandles` 
+to troubleshoot this issue.

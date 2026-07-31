@@ -10,6 +10,7 @@ import MainLayout from '../layouts/MainLayout.jsx';
 
 // Auth
 import LoginPage from '../pages/auth/LoginPage.jsx';
+import SignupPage from '../pages/auth/SignupPage.jsx';
 import UnauthorizedPage from '../pages/auth/UnauthorizedPage.jsx';
 import NotFoundPage from '../pages/NotFoundPage.jsx';
 
@@ -32,6 +33,7 @@ import ProtectedRoute from '../components/common/ProtectedRoute.jsx';
 const router = createBrowserRouter([
     // ─── Public ──────────────────────────────────────────────────────────────
     { path: '/login', element: <LoginPage /> },
+    { path: '/signup', element: <SignupPage /> },
     { path: '/unauthorized', element: <UnauthorizedPage /> },
     { path: '*', element: <NotFoundPage /> },
 
