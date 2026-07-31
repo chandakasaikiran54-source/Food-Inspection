@@ -54,7 +54,7 @@ export default function LoginPage() {
     formState: { errors, isSubmitting },
   } = useForm({
     resolver: zodResolver(schema),
-    defaultValues: { email: 'admin@health.gov', password: 'password123' },
+    defaultValues: { email: '', password: '' },
   });
 
   const onSubmit = async (data) => {

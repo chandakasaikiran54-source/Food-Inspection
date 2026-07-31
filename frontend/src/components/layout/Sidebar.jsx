@@ -24,27 +24,36 @@ import {
   ChevronRight,
   AlertTriangle,
   Award,
+  Wallet,
+  FileText,
+  HelpCircle,
+  CalendarDays,
+  FileBadge2
 } from 'lucide-react';
 
 const NAV_ITEMS = [
-  { to: '/', icon: LayoutDashboard, label: 'Dashboard', roles: null },
-  { to: '/business-profile', icon: Building2, label: 'My Business', roles: ['BUSINESS'] },
+  // ──────────────── Shared & Internal Roles ────────────────
+  { to: '/', icon: LayoutDashboard, label: 'Dashboard', roles: ['ADMIN', 'SUPERVISOR', 'COMMISSIONER', 'INSPECTOR'] },
   { to: '/businesses', icon: Building2, label: 'Food Businesses', roles: ['ADMIN', 'SUPERVISOR', 'COMMISSIONER', 'INSPECTOR'] },
   { to: '/inspections', icon: ClipboardCheck, label: 'Inspections', roles: ['ADMIN', 'SUPERVISOR', 'COMMISSIONER', 'INSPECTOR'], badge: '5 New' },
-  { to: '/inspection-history', icon: ClipboardCheck, label: 'Inspection History', roles: ['BUSINESS'] },
-  { to: '/violations', icon: AlertTriangle, label: 'Violations', roles: ['BUSINESS'] },
-  { to: '/fines', icon: FileBarChart, label: 'Fines & Payments', roles: ['BUSINESS'] },
-  { to: '/license', icon: ClipboardCheck, label: 'License', roles: ['BUSINESS'] },
-  { to: '/compliance', icon: TrendingUp, label: 'Compliance Status', roles: ['BUSINESS'] },
-  { to: '/certificates', icon: Award, label: 'Certificates', roles: ['BUSINESS'] },
   { to: '/alerts', icon: Bell, label: 'Safety Alerts', roles: ['ADMIN', 'SUPERVISOR', 'COMMISSIONER', 'INSPECTOR'], badge: 'Critical', badgeColor: 'bg-red-500/20 text-red-300 border-red-500/30' },
-  { to: '/notifications', icon: Bell, label: 'Notifications', roles: ['BUSINESS'], badge: '1 New', badgeColor: 'bg-red-500/20 text-red-300 border-red-500/30' },
   { to: '/reports', icon: FileBarChart, label: 'Reports', roles: ['ADMIN', 'COMMISSIONER', 'SUPERVISOR'] },
   { to: '/analytics', icon: TrendingUp, label: 'Analytics', roles: ['ADMIN', 'COMMISSIONER'] },
-  { to: '/documents', icon: ShieldCheck, label: 'Documents', roles: ['BUSINESS'] },
-  { to: '/support', icon: Users, label: 'Help & Support', roles: ['BUSINESS'] },
   { to: '/users', icon: Users, label: 'User Directory', roles: ['ADMIN'] },
-  { to: '/settings', icon: Settings, label: 'Settings', roles: null },
+  { to: '/settings', icon: Settings, label: 'Settings', roles: ['ADMIN', 'SUPERVISOR', 'COMMISSIONER', 'INSPECTOR'] },
+
+  // ──────────────── STRICTLY SHOP OWNER (BUSINESS) ROLES ────────────────
+  { to: '/', icon: LayoutDashboard, label: 'Dashboard', roles: ['BUSINESS'] },
+  { to: '/#my-business', icon: Building2, label: 'My Business', roles: ['BUSINESS'] },
+  { to: '/#license', icon: FileBadge2, label: 'License & Certificates', roles: ['BUSINESS'] },
+  { to: '/#inspection-history', icon: ClipboardCheck, label: 'Inspection History', roles: ['BUSINESS'] },
+  { to: '/#inspection-schedule', icon: CalendarDays, label: 'Inspection Schedule', roles: ['BUSINESS'] },
+  { to: '/#violations', icon: AlertTriangle, label: 'Violations & Notices', roles: ['BUSINESS'] },
+  { to: '/#fines', icon: Wallet, label: 'Fines & Payments', roles: ['BUSINESS'] },
+  { to: '/#documents', icon: FileText, label: 'Documents', roles: ['BUSINESS'] },
+  { to: '/alerts', icon: Bell, label: 'Alerts & Notifications', roles: ['BUSINESS'] },
+  { to: '/profile', icon: UserCheck, label: 'Profile & Business Details', roles: ['BUSINESS'] },
+  { to: '/#support', icon: HelpCircle, label: 'Help & Support', roles: ['BUSINESS'] },
 ];
 
 export default function Sidebar({ isOpen, onClose }) {
@@ -65,7 +74,10 @@ export default function Sidebar({ isOpen, onClose }) {
       : name.substring(0, 2).toUpperCase();
   };
 
-  const visibleItems = NAV_ITEMS.filter(({ roles }) => !roles || roles.includes(user?.role));
+  // Safe checks locking out exact views
+  const visibleItems = NAV_ITEMS.filter(({ roles }) => roles?.includes(user?.role));
+
+  const isBusiness = user?.role === 'BUSINESS';
 
   return (
     <>
@@ -113,14 +125,26 @@ export default function Sidebar({ isOpen, onClose }) {
 
         {/* ── Navigation ───────────────────────── */}
         <nav className="flex-1 px-4 py-4 overflow-y-auto space-y-1">
-          <p className="gov-section-label">Main Navigation</p>
+          {isBusiness ? (
+            <p className="gov-section-label">BUSINESS PORTAL</p>
+          ) : (
+            <p className="gov-section-label">Main Navigation</p>
+          )}
+
           {visibleItems.map(({ to, icon: Icon, label, badge, badgeColor }) => (
             <NavLink
-              key={to}
+              key={`${to}-${label}`}
               to={to}
               end={to === '/'}
               onClick={onClose}
-              className={({ isActive }) => `sidebar-link group ${isActive ? 'active' : ''}`}
+              className={({ isActive }) => {
+                // If it's a hash link, NavLink's isActive alone won't work well without tracking hash, 
+                // but native isActive still checks location. So we can just rely on standard NavLink.
+                // However, since to="/#hash" matches when hash changes, we must rely on it manually.
+                const isHashActive = to.includes('#') && window.location.hash === to.split('/')[1];
+                const active = isActive || isHashActive;
+                return `sidebar-link group ${active ? 'active' : ''}`;
+              }}
             >
               <Icon className="w-4 h-4 shrink-0" />
               <span className="flex-1 truncate">{label}</span>
@@ -149,16 +173,35 @@ export default function Sidebar({ isOpen, onClose }) {
             >
               {getInitials(user?.fullName, user?.role)}
             </div>
+
             <div className="min-w-0 flex-1">
               <p className="text-white text-xs font-semibold truncate">
-                {user?.fullName ?? 'Authorized Officer'}
+                {user?.fullName ?? (isBusiness ? 'Business Owner' : 'Authorized Officer')}
               </p>
-              <div className="flex items-center gap-1.5 mt-0.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
-                <p className="text-white/50 text-[11px] font-semibold uppercase tracking-wider truncate">
-                  {user?.role ?? 'Officer'}
-                </p>
-              </div>
+
+              {isBusiness ? (
+                <>
+                  <p className="text-white/60 text-[9px] font-medium leading-snug truncate mt-0.5 tracking-wider">
+                    REGISTERED FOOD BUSINESS
+                  </p>
+                  <p className="text-white/80 text-[11px] font-semibold truncate mt-0.5">
+                    {user?.businessName || user?.fullName || 'Business Outlet'}
+                  </p>
+                  <div className="flex items-center gap-1.5 mt-1.5">
+                    <span className={`w-1.5 h-1.5 rounded-full ${user?.status === 'ACTIVE' ? 'bg-green-400 animate-pulse' : 'bg-red-400'}`} />
+                    <p className="text-white/50 text-[10px] uppercase tracking-wider truncate">
+                      Status: {user?.status === 'ACTIVE' ? 'Active' : 'Inactive'}
+                    </p>
+                  </div>
+                </>
+              ) : (
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <span className={`w-1.5 h-1.5 rounded-full ${user?.status === 'ACTIVE' ? 'bg-green-400 animate-pulse' : 'bg-red-400'}`} />
+                  <p className="text-white/50 text-[11px] font-semibold uppercase tracking-wider truncate">
+                    {user?.role ?? 'Officer'}
+                  </p>
+                </div>
+              )}
             </div>
             <ChevronRight className="w-4 h-4 text-white/30 group-hover:text-white/60 transition-colors" />
           </NavLink>

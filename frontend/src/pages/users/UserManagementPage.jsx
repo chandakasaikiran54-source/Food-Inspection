@@ -3,7 +3,7 @@
  * User & Role Administration module (ADMIN Restricted).
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Users,
   Search,
@@ -16,64 +16,75 @@ import {
   Lock,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-
-const INITIAL_USERS = [
-  { id: 'USR-001', name: 'Dr. Arthur Pendelton', email: 'admin@health.gov', role: 'ADMIN', status: 'ACTIVE', lastLogin: '2026-07-31 10:15' },
-  { id: 'USR-002', name: 'Commissioner Helena Vance', email: 'commissioner@health.gov', role: 'COMMISSIONER', status: 'ACTIVE', lastLogin: '2026-07-30 16:45' },
-  { id: 'USR-003', name: 'Supervisor Mark Sterling', email: 'supervisor@health.gov', role: 'SUPERVISOR', status: 'ACTIVE', lastLogin: '2026-07-31 08:30' },
-  { id: 'USR-004', name: 'Officer David Kim', email: 'david.kim@health.gov', role: 'INSPECTOR', status: 'ACTIVE', lastLogin: '2026-07-29 14:20' },
-  { id: 'USR-005', name: 'Officer Sarah Connor', email: 'sarah.connor@health.gov', role: 'INSPECTOR', status: 'ACTIVE', lastLogin: '2026-07-28 11:00' },
-];
+import api from '../../services/api.js';
+import { ENDPOINTS } from '../../constants/api.js';
+import { format } from 'date-fns';
 
 export default function UserManagementPage() {
-  const [users, setUsers] = useState(INITIAL_USERS);
+  const [users, setUsers] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState('ALL');
   const [showAddModal, setShowAddModal] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   const [newUser, setNewUser] = useState({
-    name: '',
+    fullName: '',
     email: '',
+    password: '',
     role: 'INSPECTOR',
   });
 
+  const fetchUsers = async () => {
+    try {
+      setIsLoading(true);
+      const res = await api.get(ENDPOINTS.USERS);
+      setUsers(res.data.data.results || res.data.data);
+    } catch (error) {
+      toast.error('Failed to load users');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
   const filteredUsers = users.filter((u) => {
     const matchesSearch =
-      u.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      u.email.toLowerCase().includes(searchTerm.toLowerCase());
+      (u.fullName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (u.email || '').toLowerCase().includes(searchTerm.toLowerCase());
     const matchesRole = roleFilter === 'ALL' || u.role === roleFilter;
     return matchesSearch && matchesRole;
   });
 
-  const toggleUserStatus = (id) => {
-    setUsers(
-      users.map((u) =>
-        u.id === id ? { ...u, status: u.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE' } : u
-      )
-    );
-    toast.success('Updated user account access status');
+  const toggleUserStatus = async (id, currentStatus) => {
+    try {
+      const newStatus = currentStatus === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
+      await api.patch(`${ENDPOINTS.USERS}/${id}/status`, { status: newStatus });
+      toast.success('Updated user account access status');
+      setUsers(users.map((u) => (u._id === id ? { ...u, status: newStatus } : u)));
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to update status');
+    }
   };
 
-  const handleAddSubmit = (e) => {
+  const handleAddSubmit = async (e) => {
     e.preventDefault();
-    if (!newUser.name || !newUser.email) {
-      toast.error('Name and email are required');
+    if (!newUser.fullName || !newUser.email || !newUser.password) {
+      toast.error('Name, email, and password are required');
       return;
     }
 
-    const created = {
-      id: `USR-00${users.length + 1}`,
-      name: newUser.name,
-      email: newUser.email,
-      role: newUser.role,
-      status: 'ACTIVE',
-      lastLogin: 'Never',
-    };
-
-    setUsers([created, ...users]);
-    setShowAddModal(false);
-    toast.success(`Created new account for ${newUser.name}`);
-    setNewUser({ name: '', email: '', role: 'INSPECTOR' });
+    try {
+      await api.post(ENDPOINTS.USERS, newUser);
+      toast.success(`Created new account for ${newUser.fullName}`);
+      setShowAddModal(false);
+      setNewUser({ fullName: '', email: '', password: '', role: 'INSPECTOR' });
+      fetchUsers();
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to provision user');
+    }
   };
 
   return (
@@ -132,57 +143,71 @@ export default function UserManagementPage() {
                 <th>User Account</th>
                 <th>Role Rank</th>
                 <th>Status</th>
-                <th>Last Portal Access</th>
+                <th>Registered On</th>
                 <th className="text-right">Account Control</th>
               </tr>
             </thead>
             <tbody>
-              {filteredUsers.map((u) => (
-                <tr key={u.id}>
-                  <td>
-                    <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-bold text-xs">
-                        {u.name[0]}
-                      </div>
-                      <div>
-                        <p className="font-bold text-slate-900">{u.name}</p>
-                        <p className="text-xs text-slate-500">{u.email}</p>
-                      </div>
-                    </div>
-                  </td>
-                  <td>
-                    <span
-                      className={`badge ${
-                        u.role === 'ADMIN'
-                          ? 'badge-purple'
-                          : u.role === 'COMMISSIONER'
-                          ? 'badge-info'
-                          : u.role === 'SUPERVISOR'
-                          ? 'badge-warning'
-                          : 'badge-success'
-                      }`}
-                    >
-                      {u.role}
-                    </span>
-                  </td>
-                  <td>
-                    <span className={`badge ${u.status === 'ACTIVE' ? 'badge-success' : 'badge-danger'}`}>
-                      {u.status}
-                    </span>
-                  </td>
-                  <td className="text-xs text-slate-600">{u.lastLogin}</td>
-                  <td className="text-right">
-                    <button
-                      onClick={() => toggleUserStatus(u.id)}
-                      className={`btn-ghost text-xs font-semibold ${
-                        u.status === 'ACTIVE' ? 'text-rose-600 hover:bg-rose-50' : 'text-emerald-600 hover:bg-emerald-50'
-                      }`}
-                    >
-                      {u.status === 'ACTIVE' ? 'Deactivate' : 'Reactivate'}
-                    </button>
+              {isLoading ? (
+                <tr>
+                  <td colSpan="5" className="text-center py-8 text-sm text-gray-500">
+                    Loading users...
                   </td>
                 </tr>
-              ))}
+              ) : filteredUsers.length === 0 ? (
+                <tr>
+                  <td colSpan="5" className="text-center py-8 text-sm text-gray-500">
+                    No users found matching your criteria.
+                  </td>
+                </tr>
+              ) : (
+                filteredUsers.map((u) => (
+                  <tr key={u._id}>
+                    <td>
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-bold text-xs">
+                          {u.fullName?.charAt(0) || 'U'}
+                        </div>
+                        <div>
+                          <p className="font-bold text-slate-900">{u.fullName}</p>
+                          <p className="text-xs text-slate-500">{u.email}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td>
+                      <span
+                        className={`badge ${u.role === 'ADMIN'
+                            ? 'badge-purple'
+                            : u.role === 'COMMISSIONER'
+                              ? 'badge-info'
+                              : u.role === 'SUPERVISOR'
+                                ? 'badge-warning'
+                                : 'badge-success'
+                          }`}
+                      >
+                        {u.role}
+                      </span>
+                    </td>
+                    <td>
+                      <span className={`badge ${u.status === 'ACTIVE' ? 'badge-success' : 'badge-danger'}`}>
+                        {u.status}
+                      </span>
+                    </td>
+                    <td className="text-xs text-slate-600">
+                      {u.createdAt ? format(new Date(u.createdAt), 'dd MMM yyyy') : 'N/A'}
+                    </td>
+                    <td className="text-right">
+                      <button
+                        onClick={() => toggleUserStatus(u._id, u.status)}
+                        className={`btn-ghost text-xs font-semibold ${u.status === 'ACTIVE' ? 'text-rose-600 hover:bg-rose-50' : 'text-emerald-600 hover:bg-emerald-50'
+                          }`}
+                      >
+                        {u.status === 'ACTIVE' ? 'Deactivate' : 'Reactivate'}
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
@@ -206,8 +231,8 @@ export default function UserManagementPage() {
                   type="text"
                   required
                   placeholder="Official Name"
-                  value={newUser.name}
-                  onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
+                  value={newUser.fullName}
+                  onChange={(e) => setNewUser({ ...newUser, fullName: e.target.value })}
                   className="input-field"
                 />
               </div>
@@ -220,6 +245,18 @@ export default function UserManagementPage() {
                   placeholder="user@health.gov"
                   value={newUser.email}
                   onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
+                  className="input-field"
+                />
+              </div>
+
+              <div>
+                <label className="block font-semibold text-slate-700 mb-1">Temporary Initial Password *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Must contain upper case & number (min 8 chars)"
+                  value={newUser.password}
+                  onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
                   className="input-field"
                 />
               </div>
