@@ -4,6 +4,7 @@
  */
 
 import { Router } from 'express';
+import mongoose from 'mongoose';
 import { getDBStatus } from '../config/db.js';
 import authRoutes from './auth.routes.js';
 import userRoutes from './user.routes.js';
@@ -11,14 +12,25 @@ import userRoutes from './user.routes.js';
 const router = Router();
 
 // ─── Health Check ─────────────────────────────────────────────────────────────
-router.get('/health', (req, res) => {
+router.get('/health', async (req, res) => {
+    let mongoVersion = 'unknown';
+    if (getDBStatus() === 'connected') {
+        try {
+            const admin = mongoose.connection.db.admin();
+            const buildInfo = await admin.buildInfo();
+            mongoVersion = buildInfo.version;
+        } catch (e) {
+            mongoVersion = 'unknown';
+        }
+    }
+
     res.status(200).json({
         success: true,
-        message: 'Food Inspection API is running',
-        version: 'v1',
-        timestamp: new Date().toISOString(),
-        environment: process.env.NODE_ENV || 'development',
-        database: getDBStatus(),
+        message: 'Database Connected',
+        'Connection State': getDBStatus(),
+        'MongoDB Version': mongoVersion,
+        'Application Version': 'v1',
+        'Environment': process.env.NODE_ENV || 'development'
     });
 });
 

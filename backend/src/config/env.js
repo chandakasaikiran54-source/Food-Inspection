@@ -14,7 +14,16 @@ const env = {
     clientUrl: process.env.CLIENT_URL || 'http://localhost:3000',
 
     // MongoDB
-    mongoUri: process.env.MONGO_URI || '',
+    mongoUri: (() => {
+        let uri = process.env.MONGO_URI || '';
+        if (uri.includes('${DB_USERNAME}') || uri.includes('${DB_PASSWORD}')) {
+            const username = process.env.DB_USERNAME || 'USER_NOT_SET';
+            const password = process.env.DB_PASSWORD || 'PASS_NOT_SET';
+            uri = uri.replace('${DB_USERNAME}', encodeURIComponent(username))
+                .replace('${DB_PASSWORD}', encodeURIComponent(password));
+        }
+        return uri;
+    })(),
 
     // JWT
     jwtSecret: process.env.JWT_SECRET || 'changeme_jwt_secret_min_32_chars',

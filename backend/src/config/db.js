@@ -14,6 +14,8 @@ let retryCount = 0;
 
 export async function connectDB() {
     try {
+        console.log('Connecting to MongoDB Atlas...');
+
         const conn = await mongoose.connect(env.mongoUri, {
             maxPoolSize: 10,
             serverSelectionTimeoutMS: 5000,
@@ -21,18 +23,30 @@ export async function connectDB() {
         });
 
         retryCount = 0;
-        logger.info(`MongoDB connected: ${conn.connection.host}`);
+        console.log('MongoDB Connected Successfully');
+
+        const dbName = conn.connection.name;
+        console.log(`Database:\n${dbName}`);
+
+        return conn;
     } catch (err) {
         retryCount++;
         logger.error(`MongoDB connection failed (attempt ${retryCount}): ${err.message}`);
 
+        // Handle specific errors
+        if (err.message.includes('Authentication failed') || err.message.includes('bad auth')) {
+            logger.error('Invalid Username or Password for MongoDB Atlas.');
+        } else if (err.message.includes('ENOTFOUND') || err.message.includes('ETIMEDOUT') || err.name === 'MongooseServerSelectionError') {
+            logger.error('Network Failure or MongoDB is Down/Unreachable.');
+        }
+
         if (retryCount < MAX_RETRIES) {
-            logger.info(`Retrying in ${RETRY_DELAY / 1000}s…`);
+            logger.info(`Retrying Connection in ${RETRY_DELAY / 1000}s…`);
             await new Promise((r) => setTimeout(r, RETRY_DELAY));
             return connectDB();
         }
 
-        logger.error('Max DB connection retries reached. Exiting.');
+        logger.error('Max DB connection retries reached. Exiting Process safely.');
         process.exit(1);
     }
 }

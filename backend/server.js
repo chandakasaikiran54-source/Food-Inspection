@@ -14,6 +14,8 @@ async function startServer() {
     await connectDB();
 
     const server = app.listen(env.port, () => {
+        console.log(`Environment:\n${env.nodeEnv === 'development' ? 'Development' : env.nodeEnv}`);
+        console.log('Server Running');
         logger.info(`\n🚀 Server running in ${env.nodeEnv} mode on port ${env.port}`);
         logger.info(`📡 API base: http://localhost:${env.port}/api/v1`);
         logger.info(`❤️  Health:  http://localhost:${env.port}/api/v1/health\n`);
