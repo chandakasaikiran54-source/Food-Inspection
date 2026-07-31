@@ -1,11 +1,8 @@
 /**
  * src/pages/dashboard/DashboardPage.jsx
- * Role-Tailored Executive Dashboard.
- * Delivers unique KPIs, graphs, metrics, and workflows tailored for:
- * - ADMIN (System Command & Server Health)
- * - INSPECTOR (Field Dispatch & Daily Route)
- * - SUPERVISOR (District Oversight & Officer Workload)
- * - COMMISSIONER (Citywide Surveillance & Executive Reports)
+ * GVMC Official Design – Role-Tailored Executive Dashboard
+ * Food Safety Inspection Monitoring System
+ * Government of Andhra Pradesh | GVMC | Public Health Department
  */
 
 import { useState } from 'react';
@@ -19,26 +16,20 @@ import {
   TrendingUp,
   Plus,
   ArrowUpRight,
-  ArrowDownRight,
-  ChevronRight,
   AlertTriangle,
   AlertCircle,
   CheckCircle2,
   Calendar,
-  Sparkles,
   Server,
   Users,
   Award,
   Activity,
-  MapPin,
   Clock,
-  Navigation,
   CheckSquare,
   BarChart2,
   Sliders,
   Download,
   Shield,
-  Zap,
 } from 'lucide-react';
 import {
   AreaChart,
@@ -64,7 +55,15 @@ import {
   VIOLATION_CATEGORIES,
 } from '../../services/mockData.js';
 
-// Admin System Usage Data
+// Design tokens – reused inline for chart colors
+const C = {
+  primary: '#3D405B',
+  secondary: '#81B29A',
+  accent: '#E07A5F',
+  highlight: '#F2CC8F',
+};
+
+// Admin System Data
 const SYSTEM_TRAFFIC_DATA = [
   { time: '08:00', requests: 1200, dbQueries: 3400, activeSessions: 42 },
   { time: '10:00', requests: 3800, dbQueries: 9100, activeSessions: 118 },
@@ -75,13 +74,12 @@ const SYSTEM_TRAFFIC_DATA = [
 ];
 
 const USER_ROLE_DISTRIBUTION = [
-  { name: 'Field Officers', value: 18, color: '#3b82f6' },
-  { name: 'District Supervisors', value: 6, color: '#f59e0b' },
-  { name: 'Commissioners', value: 3, color: '#6366f1' },
-  { name: 'System Administrators', value: 2, color: '#a855f7' },
+  { name: 'Field Inspectors', value: 18, color: C.secondary },
+  { name: 'District Supervisors', value: 6, color: C.highlight },
+  { name: 'Commissioners', value: 3, color: C.primary },
+  { name: 'System Administrators', value: 2, color: C.accent },
 ];
 
-// Inspector Personal Route & Performance Data
 const INSPECTOR_ROUTE_DATA = [
   { day: 'Mon', completed: 4, passed: 4, failed: 0 },
   { day: 'Tue', completed: 5, passed: 4, failed: 1 },
@@ -90,37 +88,82 @@ const INSPECTOR_ROUTE_DATA = [
   { day: 'Fri', completed: 2, passed: 2, failed: 0 },
 ];
 
-// Supervisor Officer Workload Comparison Data
 const OFFICER_WORKLOAD_DATA = [
-  { name: 'Officer D. Kim', active: 5, completed: 18, avgScore: 86.4 },
-  { name: 'Officer S. Connor', active: 4, completed: 22, avgScore: 91.2 },
-  { name: 'Officer R. Vance', active: 3, completed: 14, avgScore: 84.0 },
-  { name: 'Officer E. Rostova', active: 2, completed: 16, avgScore: 89.5 },
+  { name: 'Ravi Kumar', active: 5, completed: 18, avgScore: 86.4 },
+  { name: 'Smt. Sowjanya', active: 4, completed: 22, avgScore: 91.2 },
+  { name: 'P. Narasimha Rao', active: 3, completed: 14, avgScore: 84.0 },
+  { name: 'Dr. S. Prasad', active: 2, completed: 16, avgScore: 89.5 },
 ];
+
+// ── Shared Components ──────────────────────────────────
+
+function KpiCard({ label, value, trend, icon: Icon, accentColor, trendBg, trendColor }) {
+  return (
+    <div className="card-modern p-5 space-y-3" style={{ borderTop: `3px solid ${accentColor}` }}>
+      <div className="flex items-center justify-between">
+        <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: `${accentColor}18` }}>
+          <Icon className="w-5 h-5" style={{ color: accentColor }} />
+        </div>
+        <span className="text-xs font-bold px-2 py-0.5 rounded-full" style={{ backgroundColor: trendBg, color: trendColor }}>
+          {trend}
+        </span>
+      </div>
+      <div>
+        <p className="text-2xl font-bold" style={{ color: C.primary }}>{value}</p>
+        <p className="text-xs text-gray-500 font-medium mt-1">{label}</p>
+      </div>
+    </div>
+  );
+}
+
+function HeroCard({ badge, badgeStyle, title, subtitle, children }) {
+  return (
+    <div
+      className="card-modern p-6 sm:p-8 text-white"
+      style={{ background: `linear-gradient(135deg, ${C.primary} 0%, #2e3147 100%)`, border: 'none' }}
+    >
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <span className="inline-block text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full mb-3"
+            style={badgeStyle}>
+            {badge}
+          </span>
+          <h1 className="text-xl sm:text-2xl font-bold">{title}</h1>
+          <p className="text-white/60 text-sm mt-1">{subtitle}</p>
+        </div>
+        <div className="flex items-center gap-3">{children}</div>
+      </div>
+    </div>
+  );
+}
 
 export default function DashboardPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
-
   const role = user?.role || 'ADMIN';
 
   return (
     <div className="space-y-6">
-      {/* Role Banner Badge */}
-      <div className="flex items-center justify-between bg-slate-900 text-white px-4 py-2.5 rounded-2xl border border-slate-800 text-xs">
+      {/* Role Banner */}
+      <div
+        className="flex items-center justify-between px-4 py-2.5 rounded-xl border text-xs"
+        style={{ backgroundColor: 'var(--gov-primary-subtle)', borderColor: '#c8cad8', color: C.primary }}
+      >
         <div className="flex items-center gap-2">
-          <Shield className="w-4 h-4 text-indigo-400" />
+          <Shield className="w-4 h-4" style={{ color: C.secondary }} />
           <span className="font-bold">Active Privilege View:</span>
-          <span className="bg-indigo-500/20 text-indigo-300 font-extrabold px-2.5 py-0.5 rounded-md border border-indigo-500/30">
+          <span
+            className="font-extrabold px-2.5 py-0.5 rounded-md"
+            style={{ backgroundColor: 'var(--gov-secondary)', color: 'white' }}
+          >
             {role} DASHBOARD
           </span>
         </div>
-        <span className="text-slate-400 text-[11px]">
-          Tailored analytics & controls for <strong className="text-slate-200">{user?.fullName || 'User'}</strong>
+        <span className="text-gray-500 text-[11px]">
+          Tailored for <strong style={{ color: C.primary }}>{user?.fullName || 'User'}</strong>
         </span>
       </div>
 
-      {/* Render Role-Specific Views */}
       {role === 'ADMIN' && <AdminDashboard navigate={navigate} />}
       {role === 'INSPECTOR' && <InspectorDashboard navigate={navigate} user={user} />}
       {role === 'SUPERVISOR' && <SupervisorDashboard navigate={navigate} />}
@@ -129,119 +172,94 @@ export default function DashboardPage() {
   );
 }
 
-/* ==========================================================================
-   1. ADMIN DASHBOARD (System Command & IT Infrastructure Focus)
-   ========================================================================== */
+/* ══════════════════════════════════════════════════════════════
+   1. ADMIN DASHBOARD
+══════════════════════════════════════════════════════════════ */
 function AdminDashboard({ navigate }) {
-  const KPI_CARDS = [
-    { label: 'Active System Users', value: '29 Users', trend: '100% Online', isPositive: true, icon: Users, color: 'bg-purple-50 text-purple-600 border-purple-200' },
-    { label: 'Server System Health', value: '99.99%', trend: 'Operational', isPositive: true, icon: Server, color: 'bg-emerald-50 text-emerald-600 border-emerald-200' },
-    { label: 'Registered Venues', value: INITIAL_BUSINESSES.length, trend: '+8 New', isPositive: true, icon: Building2, color: 'bg-indigo-50 text-indigo-600 border-indigo-200' },
-    { label: 'Daily API Request Load', value: '14.2k', trend: 'Normal Load', isPositive: true, icon: Activity, color: 'bg-sky-50 text-sky-600 border-sky-200' },
+  const kpis = [
+    { label: 'Active System Users', value: '29 Users', trend: '100% Online', icon: Users, accentColor: C.primary, trendBg: '#ecedf3', trendColor: C.primary },
+    { label: 'Server Health', value: '99.99%', trend: 'Operational', icon: Server, accentColor: C.secondary, trendBg: 'var(--gov-secondary-subtle)', trendColor: '#3d7a60' },
+    { label: 'Registered Businesses', value: INITIAL_BUSINESSES.length, trend: '+8 New', icon: Building2, accentColor: C.accent, trendBg: 'var(--gov-accent-subtle)', trendColor: '#a0432e' },
+    { label: 'Daily API Requests', value: '14.2k', trend: 'Normal Load', icon: Activity, accentColor: C.highlight, trendBg: 'var(--gov-highlight-subtle)', trendColor: '#8a6e20' },
   ];
 
   return (
     <div className="space-y-6 animate-fade-in">
-      {/* Hero */}
-      <div className="card-modern bg-gradient-to-r from-slate-950 via-purple-950 to-slate-900 text-white p-6 sm:p-8">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <span className="badge badge-purple mb-2">SYSTEM ADMINISTRATOR COMMAND</span>
-            <h1 className="text-2xl sm:text-3xl font-extrabold">Technical Infrastructure & Security Center</h1>
-            <p className="text-slate-300 text-sm mt-1">
-              Surveillance API status: <span className="text-emerald-400 font-bold">Healthy (0 Latency Spikes)</span>. Database replication active across 3 nodes.
-            </p>
-          </div>
-          <div className="flex items-center gap-3">
-            <button onClick={() => navigate('/users')} className="btn-primary">
-              <Users className="w-4 h-4" /> Manage Users
-            </button>
-            <button onClick={() => navigate('/settings')} className="btn-secondary bg-white/10 text-white border-white/20">
-              <Sliders className="w-4 h-4" /> System Settings
-            </button>
-          </div>
-        </div>
-      </div>
+      <HeroCard
+        badge="System Administrator Command"
+        badgeStyle={{ backgroundColor: 'rgba(129,178,154,0.2)', color: '#a8d5bf', border: '1px solid rgba(129,178,154,0.3)' }}
+        title="Technical Infrastructure & Security Center"
+        subtitle={`Surveillance API: Healthy (0 Latency Spikes). Database replication active.`}
+      >
+        <button onClick={() => navigate('/users')} className="btn-secondary bg-white/10 text-white border-white/25 hover:bg-white/20">
+          <Users className="w-4 h-4" /> Manage Users
+        </button>
+        <button onClick={() => navigate('/settings')} className="btn-secondary bg-white/10 text-white border-white/25 hover:bg-white/20">
+          <Sliders className="w-4 h-4" /> Settings
+        </button>
+      </HeroCard>
 
-      {/* Admin KPIs */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-        {KPI_CARDS.map(({ label, value, trend, icon: Icon, color }) => (
-          <div key={label} className="card-modern p-5 space-y-3">
-            <div className="flex items-center justify-between">
-              <div className={`p-3 rounded-2xl border ${color}`}>
-                <Icon className="w-5 h-5" />
-              </div>
-              <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700">{trend}</span>
-            </div>
-            <div>
-              <p className="text-3xl font-extrabold text-slate-900">{value}</p>
-              <p className="text-xs text-slate-500 font-semibold mt-1">{label}</p>
-            </div>
-          </div>
-        ))}
+        {kpis.map((k) => <KpiCard key={k.label} {...k} />)}
       </div>
 
-      {/* Admin Visualizations */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* System API Load Chart */}
+        {/* API Load Chart */}
         <div className="card-modern lg:col-span-2 space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-base font-bold text-slate-900">API Throughput & Database Query Load</h2>
-              <p className="text-xs text-slate-500">Real-time HTTP requests processed per hour across inspection endpoints</p>
+              <h2 className="text-sm font-bold" style={{ color: C.primary }}>API Throughput & Database Load</h2>
+              <p className="text-xs text-gray-500">HTTP requests processed per hour across inspection endpoints</p>
             </div>
-            <span className="text-xs font-mono font-bold text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-lg">
+            <span className="text-xs font-semibold px-2.5 py-1 rounded-lg" style={{ backgroundColor: 'var(--gov-primary-subtle)', color: C.primary }}>
               Live Monitor
             </span>
           </div>
-
-          <div className="h-72 w-full pt-2">
+          <div className="h-64 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={SYSTEM_TRAFFIC_DATA} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <defs>
-                  <linearGradient id="colorRequests" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.4} />
-                    <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0} />
+                  <linearGradient id="govRequests" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor={C.primary} stopOpacity={0.25} />
+                    <stop offset="95%" stopColor={C.primary} stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                <XAxis dataKey="time" tickLine={false} axisLine={false} tick={{ fill: '#64748b', fontSize: 12 }} />
-                <YAxis tickLine={false} axisLine={false} tick={{ fill: '#64748b', fontSize: 12 }} />
-                <Tooltip contentStyle={{ backgroundColor: '#0f172a', borderRadius: '12px', color: '#fff' }} />
-                <Area type="monotone" dataKey="requests" stroke="#8b5cf6" strokeWidth={2.5} fill="url(#colorRequests)" name="API Requests/hr" />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#eeecdf" />
+                <XAxis dataKey="time" tickLine={false} axisLine={false} tick={{ fill: '#8a8880', fontSize: 11 }} />
+                <YAxis tickLine={false} axisLine={false} tick={{ fill: '#8a8880', fontSize: 11 }} />
+                <Tooltip contentStyle={{ backgroundColor: C.primary, borderRadius: '10px', color: '#fff', border: 'none', fontSize: 12 }} />
+                <Area type="monotone" dataKey="requests" stroke={C.primary} strokeWidth={2} fill="url(#govRequests)" name="API Requests/hr" />
               </AreaChart>
             </ResponsiveContainer>
           </div>
         </div>
 
-        {/* User Role Distribution */}
+        {/* Role Pie Chart */}
         <div className="card-modern space-y-4 flex flex-col justify-between">
           <div>
-            <h2 className="text-base font-bold text-slate-900">Role Privilege Distribution</h2>
-            <p className="text-xs text-slate-500">Provisioned accounts by RBAC access tier</p>
+            <h2 className="text-sm font-bold" style={{ color: C.primary }}>Role Distribution</h2>
+            <p className="text-xs text-gray-500">Provisioned accounts by RBAC access tier</p>
           </div>
-
-          <div className="h-56 w-full relative">
+          <div className="h-48 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
-                <Pie data={USER_ROLE_DISTRIBUTION} cx="50%" cy="50%" innerRadius={55} outerRadius={80} paddingAngle={5} dataKey="value">
-                  {USER_ROLE_DISTRIBUTION.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
+                <Pie data={USER_ROLE_DISTRIBUTION} cx="50%" cy="50%" innerRadius={48} outerRadius={72} paddingAngle={4} dataKey="value">
+                  {USER_ROLE_DISTRIBUTION.map((entry, i) => (
+                    <Cell key={`cell-${i}`} fill={entry.color} />
                   ))}
                 </Pie>
-                <Tooltip contentStyle={{ backgroundColor: '#0f172a', borderRadius: '12px', color: '#fff' }} />
+                <Tooltip contentStyle={{ backgroundColor: C.primary, borderRadius: '10px', color: '#fff', border: 'none', fontSize: 12 }} />
               </PieChart>
             </ResponsiveContainer>
           </div>
-
-          <div className="space-y-1.5 pt-2 border-t border-slate-100 text-xs">
+          <div className="space-y-1.5 pt-2 border-t text-xs" style={{ borderColor: '#eeecdf' }}>
             {USER_ROLE_DISTRIBUTION.map((r) => (
-              <div key={r.name} className="flex justify-between font-semibold">
+              <div key={r.name} className="flex justify-between font-medium" style={{ color: C.primary }}>
                 <span className="flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: r.color }} />
-                  <span className="text-slate-700">{r.name}</span>
+                  <span className="w-2 h-2 rounded-full" style={{ backgroundColor: r.color }} />
+                  {r.name}
                 </span>
-                <span className="font-bold text-slate-900">{r.value} Accounts</span>
+                <span className="font-bold">{r.value}</span>
               </div>
             ))}
           </div>
@@ -251,94 +269,73 @@ function AdminDashboard({ navigate }) {
   );
 }
 
-/* ==========================================================================
-   2. INSPECTOR DASHBOARD (Field Workload & Daily Route Focus)
-   ========================================================================== */
+/* ══════════════════════════════════════════════════════════════
+   2. INSPECTOR DASHBOARD
+══════════════════════════════════════════════════════════════ */
 function InspectorDashboard({ navigate, user }) {
-  const KPI_CARDS = [
-    { label: 'My Pending Audits Today', value: '5 Venues', trend: '2 Urgent', isPositive: false, icon: Calendar, color: 'bg-indigo-50 text-indigo-600 border-indigo-200' },
-    { label: 'Completed This Month', value: '18 Audits', trend: '+4 vs Goal', isPositive: true, icon: CheckSquare, color: 'bg-emerald-50 text-emerald-600 border-emerald-200' },
-    { label: 'My Audit Approval Rate', value: '94.2%', trend: 'Grade A Avg', isPositive: true, icon: Award, color: 'bg-amber-50 text-amber-600 border-amber-200' },
-    { label: 'Re-inspections Due', value: '2 Venues', trend: 'High Priority', isPositive: false, icon: AlertTriangle, color: 'bg-rose-50 text-rose-600 border-rose-200' },
+  const kpis = [
+    { label: 'Pending Audits Today', value: '5 Venues', trend: '2 Urgent', icon: Calendar, accentColor: C.primary, trendBg: 'var(--gov-accent-subtle)', trendColor: '#a0432e' },
+    { label: 'Completed This Month', value: '18 Audits', trend: '+4 vs Goal', icon: CheckSquare, accentColor: C.secondary, trendBg: 'var(--gov-secondary-subtle)', trendColor: '#3d7a60' },
+    { label: 'Audit Approval Rate', value: '94.2%', trend: 'Grade A Avg', icon: Award, accentColor: C.highlight, trendBg: 'var(--gov-highlight-subtle)', trendColor: '#8a6e20' },
+    { label: 'Re-inspections Due', value: '2 Venues', trend: 'High Priority', icon: AlertTriangle, accentColor: C.accent, trendBg: 'var(--gov-accent-subtle)', trendColor: '#a0432e' },
   ];
 
   return (
     <div className="space-y-6 animate-fade-in">
-      {/* Hero */}
-      <div className="card-modern bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white p-6 sm:p-8">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <span className="badge badge-info mb-2">FIELD OFFICER DISPATCH HUB</span>
-            <h1 className="text-2xl sm:text-3xl font-extrabold">Good day, Officer {user?.fullName || 'David Kim'}</h1>
-            <p className="text-slate-300 text-sm mt-1">
-              Assigned District: <strong className="text-indigo-300">Downtown & Harbor District</strong>. You have 5 scheduled inspections queued today.
-            </p>
-          </div>
-          <button onClick={() => navigate('/inspections?action=new')} className="btn-primary">
-            <Plus className="w-4 h-4" /> Start Field Audit
-          </button>
-        </div>
-      </div>
+      <HeroCard
+        badge="Field Officer Dispatch Hub"
+        badgeStyle={{ backgroundColor: 'rgba(129,178,154,0.2)', color: '#a8d5bf', border: '1px solid rgba(129,178,154,0.3)' }}
+        title={`Good day, ${user?.fullName || 'Health Inspector Ravi Kumar'}`}
+        subtitle="Assigned Ward: MVP Colony & RK Beach. You have 5 scheduled inspections today."
+      >
+        <button onClick={() => navigate('/inspections?action=new')} className="btn-secondary bg-white/10 text-white border-white/25 hover:bg-white/20">
+          <Plus className="w-4 h-4" /> Start Field Audit
+        </button>
+      </HeroCard>
 
-      {/* Inspector KPIs */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-        {KPI_CARDS.map(({ label, value, trend, icon: Icon, color }) => (
-          <div key={label} className="card-modern p-5 space-y-3">
-            <div className="flex items-center justify-between">
-              <div className={`p-3 rounded-2xl border ${color}`}>
-                <Icon className="w-5 h-5" />
-              </div>
-              <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700">{trend}</span>
-            </div>
-            <div>
-              <p className="text-3xl font-extrabold text-slate-900">{value}</p>
-              <p className="text-xs text-slate-500 font-semibold mt-1">{label}</p>
-            </div>
-          </div>
-        ))}
+        {kpis.map((k) => <KpiCard key={k.label} {...k} />)}
       </div>
 
-      {/* Inspector Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Weekly Inspection Output Bar Chart */}
+        {/* Weekly Bar */}
         <div className="card-modern space-y-4">
           <div>
-            <h2 className="text-base font-bold text-slate-900">My Weekly Audit Completion Rate</h2>
-            <p className="text-xs text-slate-500">Field audits completed vs non-compliance findings this week</p>
+            <h2 className="text-sm font-bold" style={{ color: C.primary }}>My Weekly Audit Completion</h2>
+            <p className="text-xs text-gray-500">Field audits completed this week</p>
           </div>
-
-          <div className="h-64 w-full pt-2">
+          <div className="h-56 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={INSPECTOR_ROUTE_DATA} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                <XAxis dataKey="day" tickLine={false} axisLine={false} tick={{ fill: '#64748b', fontSize: 12 }} />
-                <YAxis tickLine={false} axisLine={false} tick={{ fill: '#64748b', fontSize: 12 }} />
-                <Tooltip contentStyle={{ backgroundColor: '#0f172a', borderRadius: '12px', color: '#fff' }} />
-                <Bar dataKey="completed" fill="#4f46e5" radius={[6, 6, 0, 0]} name="Audits Completed" />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#eeecdf" />
+                <XAxis dataKey="day" tickLine={false} axisLine={false} tick={{ fill: '#8a8880', fontSize: 11 }} />
+                <YAxis tickLine={false} axisLine={false} tick={{ fill: '#8a8880', fontSize: 11 }} />
+                <Tooltip contentStyle={{ backgroundColor: C.primary, borderRadius: '10px', color: '#fff', border: 'none', fontSize: 12 }} />
+                <Bar dataKey="completed" fill={C.secondary} radius={[6, 6, 0, 0]} name="Audits Completed" />
               </BarChart>
             </ResponsiveContainer>
           </div>
         </div>
 
-        {/* My Daily Inspection Schedule List */}
+        {/* My Queue */}
         <div className="card-modern space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-base font-bold text-slate-900">My Assigned Inspection Queue</h2>
-            <span className="text-xs font-bold text-indigo-600">Today's Route</span>
+            <h2 className="text-sm font-bold" style={{ color: C.primary }}>My Assigned Inspection Queue</h2>
+            <span className="text-xs font-bold" style={{ color: C.secondary }}>Today's Route</span>
           </div>
-
           <div className="space-y-3">
-            {INITIAL_BUSINESSES.slice(0, 3).map((b, index) => (
-              <div key={b.id} className="p-3.5 rounded-xl border border-slate-200 bg-slate-50/60 flex items-center justify-between gap-3">
+            {INITIAL_BUSINESSES.slice(0, 3).map((b, i) => (
+              <div key={b.id} className="p-3.5 rounded-xl border flex items-center justify-between gap-3"
+                style={{ backgroundColor: '#faf9f2', borderColor: '#e5e2d5' }}>
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-mono font-bold text-indigo-600">#{index + 1}</span>
-                    <p className="text-xs font-bold text-slate-900">{b.name}</p>
+                    <span className="text-xs font-mono font-bold" style={{ color: C.secondary }}>#{i + 1}</span>
+                    <p className="text-xs font-bold" style={{ color: C.primary }}>{b.name}</p>
                   </div>
-                  <p className="text-[11px] text-slate-500 mt-0.5">{b.address} &bull; {b.riskLevel} RISK</p>
+                  <p className="text-[11px] text-gray-500 mt-0.5">{b.district} · {b.riskLevel} RISK</p>
                 </div>
-                <button onClick={() => navigate('/inspections')} className="btn-ghost text-xs text-indigo-600 font-semibold">
-                  Launch Audit &rarr;
+                <button onClick={() => navigate('/inspections')} className="btn-ghost text-xs font-semibold" style={{ color: C.primary }}>
+                  Launch →
                 </button>
               </div>
             ))}
@@ -349,96 +346,69 @@ function InspectorDashboard({ navigate, user }) {
   );
 }
 
-/* ==========================================================================
-   3. SUPERVISOR DASHBOARD (District Oversight & Workload Balancer)
-   ========================================================================== */
+/* ══════════════════════════════════════════════════════════════
+   3. SUPERVISOR DASHBOARD
+══════════════════════════════════════════════════════════════ */
 function SupervisorDashboard({ navigate }) {
-  const KPI_CARDS = [
-    { label: 'District Venues Managed', value: '452 Venues', trend: 'District 1', isPositive: true, icon: Building2, color: 'bg-indigo-50 text-indigo-600 border-indigo-200' },
-    { label: 'Active Field Officers', value: '4 Officers', trend: '100% Active', isPositive: true, icon: UserCheck, color: 'bg-emerald-50 text-emerald-600 border-emerald-200' },
-    { label: 'District Avg Score', value: '86.4 / 100', trend: 'Grade A Target', isPositive: true, icon: Award, color: 'bg-amber-50 text-amber-600 border-amber-200' },
-    { label: 'Overdue Re-inspections', value: '3 Backlogged', trend: 'Needs Assign', isPositive: false, icon: AlertCircle, color: 'bg-rose-50 text-rose-600 border-rose-200' },
+  const kpis = [
+    { label: 'Ward Venues Managed', value: '452 Venues', trend: 'Ward 1 & 2', icon: Building2, accentColor: C.secondary, trendBg: 'var(--gov-secondary-subtle)', trendColor: '#3d7a60' },
+    { label: 'Active Field Officers', value: '4 Officers', trend: '100% Active', icon: UserCheck, accentColor: C.primary, trendBg: 'var(--gov-primary-subtle)', trendColor: C.primary },
+    { label: 'District Avg Score', value: '86.4 / 100', trend: 'Grade A Target', icon: Award, accentColor: C.highlight, trendBg: 'var(--gov-highlight-subtle)', trendColor: '#8a6e20' },
+    { label: 'Overdue Re-inspections', value: '3 Backlogged', trend: 'Needs Assign', icon: AlertCircle, accentColor: C.accent, trendBg: 'var(--gov-accent-subtle)', trendColor: '#a0432e' },
   ];
 
   return (
     <div className="space-y-6 animate-fade-in">
-      {/* Hero */}
-      <div className="card-modern bg-gradient-to-r from-slate-900 via-amber-950 to-slate-900 text-white p-6 sm:p-8">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <span className="badge badge-warning mb-2">DISTRICT SUPERVISOR COMMAND</span>
-            <h1 className="text-2xl sm:text-3xl font-extrabold">District Operations & Officer Workload</h1>
-            <p className="text-slate-300 text-sm mt-1">
-              Surveillance area: <strong className="text-amber-300">Central Municipal District 1 & 2</strong>. 4 active officers dispatched.
-            </p>
-          </div>
-          <button onClick={() => navigate('/inspectors')} className="btn-primary">
-            <UserCheck className="w-4 h-4" /> Manage Inspectors
-          </button>
-        </div>
-      </div>
+      <HeroCard
+        badge="District Supervisor Command"
+        badgeStyle={{ backgroundColor: 'rgba(242,204,143,0.2)', color: '#f2cc8f', border: '1px solid rgba(242,204,143,0.3)' }}
+        title="District Operations & Officer Workload"
+        subtitle="Surveillance area: Dwaraka Nagar & Seethammadhara Wards. 4 active officers dispatched."
+      >
+        <button onClick={() => navigate('/inspectors')} className="btn-secondary bg-white/10 text-white border-white/25 hover:bg-white/20">
+          <UserCheck className="w-4 h-4" /> Manage Inspectors
+        </button>
+      </HeroCard>
 
-      {/* Supervisor KPIs */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-        {KPI_CARDS.map(({ label, value, trend, icon: Icon, color }) => (
-          <div key={label} className="card-modern p-5 space-y-3">
-            <div className="flex items-center justify-between">
-              <div className={`p-3 rounded-2xl border ${color}`}>
-                <Icon className="w-5 h-5" />
-              </div>
-              <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700">{trend}</span>
-            </div>
-            <div>
-              <p className="text-3xl font-extrabold text-slate-900">{value}</p>
-              <p className="text-xs text-slate-500 font-semibold mt-1">{label}</p>
-            </div>
-          </div>
-        ))}
+        {kpis.map((k) => <KpiCard key={k.label} {...k} />)}
       </div>
 
-      {/* Supervisor Workload Comparison Chart */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="card-modern lg:col-span-2 space-y-4">
           <div>
-            <h2 className="text-base font-bold text-slate-900">Officer Workload & Monthly Completion Comparison</h2>
-            <p className="text-xs text-slate-500">Total audits completed this month by lead field inspector</p>
+            <h2 className="text-sm font-bold" style={{ color: C.primary }}>Officer Workload & Monthly Completion</h2>
+            <p className="text-xs text-gray-500">Total audits completed this month by each lead inspector</p>
           </div>
-
-          <div className="h-72 w-full pt-2">
+          <div className="h-64 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={OFFICER_WORKLOAD_DATA} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                <XAxis dataKey="name" tickLine={false} axisLine={false} tick={{ fill: '#64748b', fontSize: 12 }} />
-                <YAxis tickLine={false} axisLine={false} tick={{ fill: '#64748b', fontSize: 12 }} />
-                <Tooltip contentStyle={{ backgroundColor: '#0f172a', borderRadius: '12px', color: '#fff' }} />
-                <Bar dataKey="completed" fill="#f59e0b" radius={[6, 6, 0, 0]} name="Completed Audits" />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#eeecdf" />
+                <XAxis dataKey="name" tickLine={false} axisLine={false} tick={{ fill: '#8a8880', fontSize: 10 }} />
+                <YAxis tickLine={false} axisLine={false} tick={{ fill: '#8a8880', fontSize: 11 }} />
+                <Tooltip contentStyle={{ backgroundColor: C.primary, borderRadius: '10px', color: '#fff', border: 'none', fontSize: 12 }} />
+                <Bar dataKey="completed" fill={C.highlight} radius={[6, 6, 0, 0]} name="Completed Audits" />
               </BarChart>
             </ResponsiveContainer>
           </div>
         </div>
 
-        {/* Hazard Risk Distribution */}
-        <div className="card-modern space-y-4 flex flex-col justify-between">
+        <div className="card-modern space-y-4">
           <div>
-            <h2 className="text-base font-bold text-slate-900">District Venue Risk Tiers</h2>
-            <p className="text-xs text-slate-500">Breakdown of high vs low risk venues in District 1</p>
+            <h2 className="text-sm font-bold" style={{ color: C.primary }}>Ward Venue Risk Tiers</h2>
+            <p className="text-xs text-gray-500">Breakdown of risk levels in District 1</p>
           </div>
-
-          <div className="space-y-3 pt-2">
-            <div className="p-3 rounded-xl bg-rose-50 border border-rose-200">
-              <p className="text-xs font-bold text-rose-700">High Risk Food Prep (HACCP Required)</p>
-              <p className="text-lg font-extrabold text-rose-900 mt-0.5">142 Establishments (31%)</p>
-            </div>
-
-            <div className="p-3 rounded-xl bg-amber-50 border border-amber-200">
-              <p className="text-xs font-bold text-amber-700">Medium Risk Deli & Grocery</p>
-              <p className="text-lg font-extrabold text-amber-900 mt-0.5">210 Establishments (46%)</p>
-            </div>
-
-            <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200">
-              <p className="text-xs font-bold text-emerald-700">Low Risk Bakeries & Cafes</p>
-              <p className="text-lg font-extrabold text-emerald-900 mt-0.5">100 Establishments (23%)</p>
-            </div>
+          <div className="space-y-3">
+            {[
+              { label: 'High Risk (Audit Required)', value: '142 Establishments (31%)', color: C.accent, bg: 'var(--gov-accent-subtle)' },
+              { label: 'Medium Risk Deli & Provisions', value: '210 Establishments (46%)', color: '#8a6e20', bg: 'var(--gov-highlight-subtle)' },
+              { label: 'Low Risk Bakeries & Tea Stalls', value: '100 Establishments (23%)', color: '#3d7a60', bg: 'var(--gov-secondary-subtle)' },
+            ].map((r) => (
+              <div key={r.label} className="p-3 rounded-xl border" style={{ backgroundColor: r.bg, borderColor: `${r.color}30` }}>
+                <p className="text-xs font-bold" style={{ color: r.color }}>{r.label}</p>
+                <p className="text-base font-bold mt-0.5" style={{ color: C.primary }}>{r.value}</p>
+              </div>
+            ))}
           </div>
         </div>
       </div>
@@ -446,111 +416,84 @@ function SupervisorDashboard({ navigate }) {
   );
 }
 
-/* ==========================================================================
-   4. COMMISSIONER DASHBOARD (Citywide Health & Executive Macro Metrics)
-   ========================================================================== */
+/* ══════════════════════════════════════════════════════════════
+   4. COMMISSIONER DASHBOARD
+══════════════════════════════════════════════════════════════ */
 function CommissionerDashboard({ navigate }) {
-  const KPI_CARDS = [
-    { label: 'Citywide Compliance Index', value: '98.4%', trend: '+1.2% YoY', isPositive: true, icon: ShieldAlert, color: 'bg-indigo-50 text-indigo-600 border-indigo-200' },
-    { label: 'Emergency License Holds', value: '2 Venues', trend: 'Enforced', isPositive: false, icon: AlertTriangle, color: 'bg-rose-50 text-rose-600 border-rose-200' },
-    { label: 'Grade A Quality Ratio', value: '58.0%', trend: 'Top Tier', isPositive: true, icon: Award, color: 'bg-emerald-50 text-emerald-600 border-emerald-200' },
-    { label: 'Public Outbreak Hazard Risk', value: 'LEVEL 0', trend: 'Safe', isPositive: true, icon: CheckCircle2, color: 'bg-sky-50 text-sky-600 border-sky-200' },
+  const kpis = [
+    { label: 'Citywide Compliance Index', value: '98.4%', trend: '+1.2% YoY', icon: ShieldAlert, accentColor: C.secondary, trendBg: 'var(--gov-secondary-subtle)', trendColor: '#3d7a60' },
+    { label: 'Emergency License Holds', value: '2 Venues', trend: 'Enforced', icon: AlertTriangle, accentColor: C.accent, trendBg: 'var(--gov-accent-subtle)', trendColor: '#a0432e' },
+    { label: 'Grade A Quality Ratio', value: '58.0%', trend: 'Top Tier', icon: Award, accentColor: C.secondary, trendBg: 'var(--gov-secondary-subtle)', trendColor: '#3d7a60' },
+    { label: 'Public Outbreak Hazard Risk', value: 'LEVEL 0', trend: 'Safe', icon: CheckCircle2, accentColor: C.primary, trendBg: 'var(--gov-secondary-subtle)', trendColor: '#3d7a60' },
   ];
 
   return (
     <div className="space-y-6 animate-fade-in">
-      {/* Hero */}
-      <div className="card-modern bg-gradient-to-r from-slate-900 via-indigo-900 to-slate-950 text-white p-6 sm:p-8">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <span className="badge badge-info mb-2">PUBLIC HEALTH COMMISSIONER COMMAND</span>
-            <h1 className="text-2xl sm:text-3xl font-extrabold">Executive Citywide Health Surveillance</h1>
-            <p className="text-slate-300 text-sm mt-1">
-              Macro Overview: <strong className="text-emerald-400">98.4% Public Compliance Index</strong> across all 4 municipal health sectors.
-            </p>
-          </div>
-          <div className="flex items-center gap-3">
-            <button onClick={() => navigate('/reports')} className="btn-primary shadow-indigo-600/40">
-              <Download className="w-4 h-4" /> Download Executive Report
-            </button>
-          </div>
-        </div>
-      </div>
+      <HeroCard
+        badge="Public Health Commissioner Command"
+        badgeStyle={{ backgroundColor: 'rgba(242,204,143,0.2)', color: '#f2cc8f', border: '1px solid rgba(242,204,143,0.3)' }}
+        title="Executive Citywide Health Surveillance"
+        subtitle="Macro Overview: 98.4% Public Compliance Index across all GVMC health sectors."
+      >
+        <button onClick={() => navigate('/reports')} className="btn-secondary bg-white/10 text-white border-white/25 hover:bg-white/20">
+          <Download className="w-4 h-4" /> Executive Report
+        </button>
+      </HeroCard>
 
-      {/* Commissioner KPIs */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-        {KPI_CARDS.map(({ label, value, trend, icon: Icon, color }) => (
-          <div key={label} className="card-modern p-5 space-y-3">
-            <div className="flex items-center justify-between">
-              <div className={`p-3 rounded-2xl border ${color}`}>
-                <Icon className="w-5 h-5" />
-              </div>
-              <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700">{trend}</span>
-            </div>
-            <div>
-              <p className="text-3xl font-extrabold text-slate-900">{value}</p>
-              <p className="text-xs text-slate-500 font-semibold mt-1">{label}</p>
-            </div>
-          </div>
-        ))}
+        {kpis.map((k) => <KpiCard key={k.label} {...k} />)}
       </div>
 
-      {/* Commissioner Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Citywide Monthly Hygiene Trend Area Chart */}
         <div className="card-modern lg:col-span-2 space-y-4">
           <div>
-            <h2 className="text-base font-bold text-slate-900">Citywide Monthly Hygiene Trend & Audit Success</h2>
-            <p className="text-xs text-slate-500">Longitudinal evaluation of monthly inspections and passed sanitation audits</p>
+            <h2 className="text-sm font-bold" style={{ color: C.primary }}>Citywide Monthly Hygiene Trend</h2>
+            <p className="text-xs text-gray-500">Longitudinal evaluation of monthly inspections and passed sanitation audits</p>
           </div>
-
-          <div className="h-72 w-full pt-2">
+          <div className="h-64 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={MONTHLY_TREND_DATA} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <defs>
-                  <linearGradient id="colorComm" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#4f46e5" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="#4f46e5" stopOpacity={0} />
+                  <linearGradient id="commGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor={C.secondary} stopOpacity={0.3} />
+                    <stop offset="95%" stopColor={C.secondary} stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                <XAxis dataKey="month" tickLine={false} axisLine={false} tick={{ fill: '#64748b', fontSize: 12 }} />
-                <YAxis tickLine={false} axisLine={false} tick={{ fill: '#64748b', fontSize: 12 }} />
-                <Tooltip contentStyle={{ backgroundColor: '#0f172a', borderRadius: '12px', color: '#fff' }} />
-                <Area type="monotone" dataKey="inspections" stroke="#4f46e5" strokeWidth={2.5} fill="url(#colorComm)" name="Total Audits" />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#eeecdf" />
+                <XAxis dataKey="month" tickLine={false} axisLine={false} tick={{ fill: '#8a8880', fontSize: 11 }} />
+                <YAxis tickLine={false} axisLine={false} tick={{ fill: '#8a8880', fontSize: 11 }} />
+                <Tooltip contentStyle={{ backgroundColor: C.primary, borderRadius: '10px', color: '#fff', border: 'none', fontSize: 12 }} />
+                <Area type="monotone" dataKey="inspections" stroke={C.secondary} strokeWidth={2} fill="url(#commGrad)" name="Total Audits" />
               </AreaChart>
             </ResponsiveContainer>
           </div>
         </div>
 
-        {/* Grade Share Donut Chart */}
         <div className="card-modern space-y-4 flex flex-col justify-between">
           <div>
-            <h2 className="text-base font-bold text-slate-900">Hygiene Grade Ratio</h2>
-            <p className="text-xs text-slate-500">Percentage distribution of Grade A to F venues</p>
+            <h2 className="text-sm font-bold" style={{ color: C.primary }}>Hygiene Grade Distribution</h2>
+            <p className="text-xs text-gray-500">Percentage by Grade for GVMC registered businesses</p>
           </div>
-
-          <div className="h-56 w-full relative">
+          <div className="h-44 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
-                <Pie data={COMPLIANCE_DISTRIBUTION} cx="50%" cy="50%" innerRadius={55} outerRadius={80} paddingAngle={5} dataKey="value">
-                  {COMPLIANCE_DISTRIBUTION.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
+                <Pie data={COMPLIANCE_DISTRIBUTION} cx="50%" cy="50%" innerRadius={44} outerRadius={68} paddingAngle={4} dataKey="value">
+                  {COMPLIANCE_DISTRIBUTION.map((entry, i) => (
+                    <Cell key={`cell-${i}`} fill={entry.color} />
                   ))}
                 </Pie>
-                <Tooltip contentStyle={{ backgroundColor: '#0f172a', borderRadius: '12px', color: '#fff' }} />
+                <Tooltip contentStyle={{ backgroundColor: C.primary, borderRadius: '10px', color: '#fff', border: 'none', fontSize: 12 }} />
               </PieChart>
             </ResponsiveContainer>
           </div>
-
-          <div className="space-y-1.5 pt-2 border-t border-slate-100 text-xs">
+          <div className="space-y-1.5 pt-2 border-t text-xs" style={{ borderColor: '#eeecdf' }}>
             {COMPLIANCE_DISTRIBUTION.map((item) => (
-              <div key={item.name} className="flex justify-between font-semibold">
+              <div key={item.name} className="flex justify-between font-medium" style={{ color: C.primary }}>
                 <span className="flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: item.color }} />
-                  <span className="text-slate-700">{item.name}</span>
+                  <span className="w-2 h-2 rounded-full" style={{ backgroundColor: item.color }} />
+                  {item.name}
                 </span>
-                <span className="font-bold text-slate-900">{item.value}%</span>
+                <span className="font-bold">{item.value}%</span>
               </div>
             ))}
           </div>

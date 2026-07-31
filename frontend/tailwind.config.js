@@ -7,30 +7,25 @@ export default {
     theme: {
         extend: {
             colors: {
+                /* ── GVMC Government Palette ── */
+                'gov-primary': '#3D405B',  /* Twilight Indigo */
+                'gov-secondary': '#81B29A',  /* Muted Teal      */
+                'gov-accent': '#E07A5F',  /* Burnt Peach     */
+                'gov-highlight': '#F2CC8F',  /* Apricot Cream   */
+                'gov-bg': '#F4F1DE',  /* Eggshell        */
+                /* ── Legacy aliases kept for any Tailwind usage ── */
                 primary: {
-                    50: '#eef2ff',
-                    100: '#e0e7ff',
-                    200: '#c7d2fe',
-                    300: '#a5b4fc',
-                    400: '#818cf8',
-                    500: '#6366f1',
-                    600: '#4f46e5',
-                    700: '#4338ca',
-                    800: '#3730a3',
-                    900: '#312e81',
-                    950: '#1e1b4b',
-                },
-                brand: {
-                    50: '#f0fdf4',
-                    100: '#dcfce7',
-                    500: '#22c55e',
-                    600: '#16a34a',
-                    700: '#15803d',
-                },
-                slateNavy: {
-                    800: '#0f172a',
-                    900: '#0b1329',
-                    950: '#070d1e',
+                    50: '#ecedf3',
+                    100: '#d4d6e4',
+                    200: '#b0b2cc',
+                    300: '#8b8eb5',
+                    400: '#676a9d',
+                    500: '#4d5085',
+                    600: '#3D405B',
+                    700: '#2e3147',
+                    800: '#252840',
+                    900: '#1c1f36',
+                    950: '#13152a',
                 },
             },
             fontFamily: {
