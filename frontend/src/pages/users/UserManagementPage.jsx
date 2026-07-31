@@ -1,217 +1,255 @@
 /**
  * src/pages/users/UserManagementPage.jsx
- * Admin-only page: Create, Read, Update, Delete users
- * with search, role/status filters, and pagination.
+ * User & Role Administration module (ADMIN Restricted).
  */
 
 import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
+import {
+  Users,
+  Search,
+  Plus,
+  ShieldCheck,
+  Mail,
+  UserCheck,
+  UserX,
+  X,
+  Lock,
+} from 'lucide-react';
 import toast from 'react-hot-toast';
-import api from '../../services/api.js';
-import { ENDPOINTS } from '../../constants/api.js';
 
-// ─── Validation ───────────────────────────────────────────────────────────────
-const createSchema = z.object({
-    fullName: z.string().min(2, 'Full name required'),
-    email: z.string().email('Valid email required'),
-    password: z.string().min(8, 'Min 8 characters'),
-    role: z.enum(['ADMIN', 'COMMISSIONER', 'SUPERVISOR', 'INSPECTOR']),
-});
+const INITIAL_USERS = [
+  { id: 'USR-001', name: 'Dr. Arthur Pendelton', email: 'admin@health.gov', role: 'ADMIN', status: 'ACTIVE', lastLogin: '2026-07-31 10:15' },
+  { id: 'USR-002', name: 'Commissioner Helena Vance', email: 'commissioner@health.gov', role: 'COMMISSIONER', status: 'ACTIVE', lastLogin: '2026-07-30 16:45' },
+  { id: 'USR-003', name: 'Supervisor Mark Sterling', email: 'supervisor@health.gov', role: 'SUPERVISOR', status: 'ACTIVE', lastLogin: '2026-07-31 08:30' },
+  { id: 'USR-004', name: 'Officer David Kim', email: 'david.kim@health.gov', role: 'INSPECTOR', status: 'ACTIVE', lastLogin: '2026-07-29 14:20' },
+  { id: 'USR-005', name: 'Officer Sarah Connor', email: 'sarah.connor@health.gov', role: 'INSPECTOR', status: 'ACTIVE', lastLogin: '2026-07-28 11:00' },
+];
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-const ROLE_BADGE = {
-    ADMIN: 'badge-admin',
-    COMMISSIONER: 'badge-commissioner',
-    SUPERVISOR: 'badge-supervisor',
-    INSPECTOR: 'badge-inspector',
-};
-
-function StatusBadge({ status }) {
-    return <span className={status === 'ACTIVE' ? 'badge-active' : 'badge-inactive'}>{status}</span>;
-}
-
-// ─── Component ────────────────────────────────────────────────────────────────
 export default function UserManagementPage() {
-    const qc = useQueryClient();
-    const [page, setPage] = useState(1);
-    const [search, setSearch] = useState('');
-    const [roleFilter, setRoleFilter] = useState('');
-    const [statusFilter, setStatusFilter] = useState('');
-    const [showModal, setShowModal] = useState(false);
-    const LIMIT = 10;
+  const [users, setUsers] = useState(INITIAL_USERS);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [roleFilter, setRoleFilter] = useState('ALL');
+  const [showAddModal, setShowAddModal] = useState(false);
 
-    // ─── Fetch users ────────────────────────────────────────────────────────────
-    const { data, isLoading } = useQuery({
-        queryKey: ['users', page, search, roleFilter, statusFilter],
-        queryFn: async () => {
-            const params = new URLSearchParams({ page, limit: LIMIT });
-            if (search) params.set('search', search);
-            if (roleFilter) params.set('role', roleFilter);
-            if (statusFilter) params.set('status', statusFilter);
-            const res = await api.get(`${ENDPOINTS.USERS}?${params}`);
-            return res.data;
-        },
-        keepPreviousData: true,
-    });
+  const [newUser, setNewUser] = useState({
+    name: '',
+    email: '',
+    role: 'INSPECTOR',
+  });
 
-    // ─── Create user ────────────────────────────────────────────────────────────
-    const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm({
-        resolver: zodResolver(createSchema),
-        defaultValues: { role: 'INSPECTOR' },
-    });
+  const filteredUsers = users.filter((u) => {
+    const matchesSearch =
+      u.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      u.email.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesRole = roleFilter === 'ALL' || u.role === roleFilter;
+    return matchesSearch && matchesRole;
+  });
 
-    const createMutation = useMutation({
-        mutationFn: (payload) => api.post(ENDPOINTS.USERS, payload),
-        onSuccess: () => {
-            toast.success('User created successfully');
-            qc.invalidateQueries(['users']);
-            setShowModal(false);
-            reset();
-        },
-        onError: (err) => toast.error(err.response?.data?.message || 'Failed to create user'),
-    });
-
-    // ─── Toggle status ───────────────────────────────────────────────────────────
-    const statusMutation = useMutation({
-        mutationFn: ({ id, status }) => api.patch(`${ENDPOINTS.USERS}/${id}/status`, { status }),
-        onSuccess: () => { toast.success('Status updated'); qc.invalidateQueries(['users']); },
-        onError: (err) => toast.error(err.response?.data?.message || 'Failed to update status'),
-    });
-
-    // ─── Delete ──────────────────────────────────────────────────────────────────
-    const deleteMutation = useMutation({
-        mutationFn: (id) => api.delete(`${ENDPOINTS.USERS}/${id}`),
-        onSuccess: () => { toast.success('User deleted'); qc.invalidateQueries(['users']); },
-        onError: (err) => toast.error(err.response?.data?.message || 'Failed to delete user'),
-    });
-
-    const users = data?.data?.data ?? [];
-    const pagination = data?.data?.pagination ?? {};
-
-    return (
-        <div className="space-y-5">
-            {/* Header */}
-            <div className="flex items-center justify-between">
-                <div>
-                    <h2 className="text-xl font-bold text-gray-900">User Management</h2>
-                    <p className="text-sm text-gray-500 mt-0.5">Manage system users and their roles</p>
-                </div>
-                <button className="btn-primary" onClick={() => setShowModal(true)}>＋ Add User</button>
-            </div>
-
-            {/* Filters */}
-            <div className="card p-4 flex flex-wrap gap-3">
-                <input
-                    type="text"
-                    placeholder="Search name or email…"
-                    value={search}
-                    onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-                    className="input-field max-w-xs"
-                />
-                <select value={roleFilter} onChange={(e) => { setRoleFilter(e.target.value); setPage(1); }} className="input-field max-w-xs">
-                    <option value="">All Roles</option>
-                    {['ADMIN', 'COMMISSIONER', 'SUPERVISOR', 'INSPECTOR'].map((r) => <option key={r}>{r}</option>)}
-                </select>
-                <select value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }} className="input-field max-w-xs">
-                    <option value="">All Statuses</option>
-                    <option>ACTIVE</option>
-                    <option>INACTIVE</option>
-                </select>
-            </div>
-
-            {/* Table */}
-            <div className="card overflow-hidden">
-                <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
-                        <thead className="bg-gray-50 border-b">
-                            <tr>
-                                {['Name', 'Email', 'Role', 'Status', 'Last Login', 'Actions'].map((h) => (
-                                    <th key={h} className="px-4 py-3 text-left font-semibold text-gray-600">{h}</th>
-                                ))}
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-100">
-                            {isLoading ? (
-                                <tr><td colSpan={6} className="text-center py-10 text-gray-400">Loading…</td></tr>
-                            ) : users.length === 0 ? (
-                                <tr><td colSpan={6} className="text-center py-10 text-gray-400">No users found</td></tr>
-                            ) : users.map((u) => (
-                                <tr key={u._id} className="hover:bg-gray-50/50">
-                                    <td className="px-4 py-3 font-medium text-gray-900">{u.fullName}</td>
-                                    <td className="px-4 py-3 text-gray-600">{u.email}</td>
-                                    <td className="px-4 py-3"><span className={ROLE_BADGE[u.role]}>{u.role}</span></td>
-                                    <td className="px-4 py-3"><StatusBadge status={u.status} /></td>
-                                    <td className="px-4 py-3 text-gray-500">{u.lastLogin ? new Date(u.lastLogin).toLocaleDateString() : '—'}</td>
-                                    <td className="px-4 py-3">
-                                        <div className="flex gap-2">
-                                            <button
-                                                className="text-xs px-2.5 py-1 rounded-md border border-gray-300 hover:bg-gray-50"
-                                                onClick={() => statusMutation.mutate({ id: u._id, status: u.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE' })}
-                                            >
-                                                {u.status === 'ACTIVE' ? 'Deactivate' : 'Activate'}
-                                            </button>
-                                            <button
-                                                className="text-xs px-2.5 py-1 rounded-md border border-red-200 text-red-600 hover:bg-red-50"
-                                                onClick={() => { if (confirm(`Delete ${u.fullName}?`)) deleteMutation.mutate(u._id); }}
-                                            >Delete</button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
-
-                {/* Pagination */}
-                {pagination.totalPages > 1 && (
-                    <div className="flex items-center justify-between px-4 py-3 border-t">
-                        <p className="text-sm text-gray-500">
-                            Showing {(page - 1) * LIMIT + 1}–{Math.min(page * LIMIT, pagination.total)} of {pagination.total}
-                        </p>
-                        <div className="flex gap-2">
-                            <button disabled={!pagination.hasPrevPage} onClick={() => setPage(p => p - 1)} className="btn-secondary text-sm py-1.5 disabled:opacity-40">← Prev</button>
-                            <button disabled={!pagination.hasNextPage} onClick={() => setPage(p => p + 1)} className="btn-secondary text-sm py-1.5 disabled:opacity-40">Next →</button>
-                        </div>
-                    </div>
-                )}
-            </div>
-
-            {/* Create User Modal */}
-            {showModal && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8">
-                        <h3 className="text-lg font-bold text-gray-900 mb-6">Create New User</h3>
-                        <form onSubmit={handleSubmit((d) => createMutation.mutate(d))} className="space-y-4">
-                            {[
-                                { name: 'fullName', label: 'Full Name', type: 'text', ph: 'John Doe' },
-                                { name: 'email', label: 'Email', type: 'email', ph: 'user@health.gov' },
-                                { name: 'password', label: 'Password', type: 'password', ph: '••••••••' },
-                            ].map(({ name, label, type, ph }) => (
-                                <div key={name}>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
-                                    <input type={type} placeholder={ph} className={`input-field ${errors[name] ? 'border-red-400' : ''}`} {...register(name)} />
-                                    {errors[name] && <p className="text-red-500 text-xs mt-1">{errors[name].message}</p>}
-                                </div>
-                            ))}
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
-                                <select className="input-field" {...register('role')}>
-                                    {['ADMIN', 'COMMISSIONER', 'SUPERVISOR', 'INSPECTOR'].map((r) => <option key={r}>{r}</option>)}
-                                </select>
-                            </div>
-                            <div className="flex gap-3 pt-2">
-                                <button type="button" onClick={() => { setShowModal(false); reset(); }} className="btn-secondary flex-1">Cancel</button>
-                                <button type="submit" disabled={isSubmitting} className="btn-primary flex-1">
-                                    {isSubmitting ? 'Creating…' : 'Create User'}
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            )}
-        </div>
+  const toggleUserStatus = (id) => {
+    setUsers(
+      users.map((u) =>
+        u.id === id ? { ...u, status: u.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE' } : u
+      )
     );
+    toast.success('Updated user account access status');
+  };
+
+  const handleAddSubmit = (e) => {
+    e.preventDefault();
+    if (!newUser.name || !newUser.email) {
+      toast.error('Name and email are required');
+      return;
+    }
+
+    const created = {
+      id: `USR-00${users.length + 1}`,
+      name: newUser.name,
+      email: newUser.email,
+      role: newUser.role,
+      status: 'ACTIVE',
+      lastLogin: 'Never',
+    };
+
+    setUsers([created, ...users]);
+    setShowAddModal(false);
+    toast.success(`Created new account for ${newUser.name}`);
+    setNewUser({ name: '', email: '', role: 'INSPECTOR' });
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
+            <Users className="w-6 h-6 text-indigo-600" /> User & Role Administration
+          </h1>
+          <p className="text-xs text-slate-500 mt-1">
+            Manage system access accounts, assign role permissions, and audit user logins.
+          </p>
+        </div>
+
+        <button onClick={() => setShowAddModal(true)} className="btn-primary shadow-indigo-600/30">
+          <Plus className="w-4 h-4" /> Provision New User
+        </button>
+      </div>
+
+      {/* Filter Bar */}
+      <div className="card-modern p-4 space-y-4 md:space-y-0 md:flex md:items-center md:justify-between gap-4">
+        <div className="relative flex-1 max-w-md">
+          <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+          <input
+            type="text"
+            placeholder="Search account name, email..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="input-field pl-10"
+          />
+        </div>
+
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Role Tier:</span>
+          <select
+            value={roleFilter}
+            onChange={(e) => setRoleFilter(e.target.value)}
+            className="select-field text-xs py-1.5 w-40"
+          >
+            <option value="ALL">All Roles</option>
+            <option value="ADMIN">ADMIN</option>
+            <option value="COMMISSIONER">COMMISSIONER</option>
+            <option value="SUPERVISOR">SUPERVISOR</option>
+            <option value="INSPECTOR">INSPECTOR</option>
+          </select>
+        </div>
+      </div>
+
+      {/* User Directory Table */}
+      <div className="card-modern overflow-hidden p-0">
+        <div className="overflow-x-auto">
+          <table className="table-modern">
+            <thead>
+              <tr>
+                <th>User Account</th>
+                <th>Role Rank</th>
+                <th>Status</th>
+                <th>Last Portal Access</th>
+                <th className="text-right">Account Control</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredUsers.map((u) => (
+                <tr key={u.id}>
+                  <td>
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-bold text-xs">
+                        {u.name[0]}
+                      </div>
+                      <div>
+                        <p className="font-bold text-slate-900">{u.name}</p>
+                        <p className="text-xs text-slate-500">{u.email}</p>
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    <span
+                      className={`badge ${
+                        u.role === 'ADMIN'
+                          ? 'badge-purple'
+                          : u.role === 'COMMISSIONER'
+                          ? 'badge-info'
+                          : u.role === 'SUPERVISOR'
+                          ? 'badge-warning'
+                          : 'badge-success'
+                      }`}
+                    >
+                      {u.role}
+                    </span>
+                  </td>
+                  <td>
+                    <span className={`badge ${u.status === 'ACTIVE' ? 'badge-success' : 'badge-danger'}`}>
+                      {u.status}
+                    </span>
+                  </td>
+                  <td className="text-xs text-slate-600">{u.lastLogin}</td>
+                  <td className="text-right">
+                    <button
+                      onClick={() => toggleUserStatus(u.id)}
+                      className={`btn-ghost text-xs font-semibold ${
+                        u.status === 'ACTIVE' ? 'text-rose-600 hover:bg-rose-50' : 'text-emerald-600 hover:bg-emerald-50'
+                      }`}
+                    >
+                      {u.status === 'ACTIVE' ? 'Deactivate' : 'Reactivate'}
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Add User Modal */}
+      {showAddModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full p-6 sm:p-8 space-y-6">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+              <h2 className="text-xl font-bold text-slate-900">Provision System Account</h2>
+              <button onClick={() => setShowAddModal(false)} className="text-slate-400 hover:text-slate-600">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleAddSubmit} className="space-y-4 text-xs">
+              <div>
+                <label className="block font-semibold text-slate-700 mb-1">Full Name *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Official Name"
+                  value={newUser.name}
+                  onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
+                  className="input-field"
+                />
+              </div>
+
+              <div>
+                <label className="block font-semibold text-slate-700 mb-1">Official Email Address *</label>
+                <input
+                  type="email"
+                  required
+                  placeholder="user@health.gov"
+                  value={newUser.email}
+                  onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
+                  className="input-field"
+                />
+              </div>
+
+              <div>
+                <label className="block font-semibold text-slate-700 mb-1">RBAC Role Privilege Tier</label>
+                <select
+                  value={newUser.role}
+                  onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
+                  className="select-field"
+                >
+                  <option value="INSPECTOR">INSPECTOR (Field Officer)</option>
+                  <option value="SUPERVISOR">SUPERVISOR (District Lead)</option>
+                  <option value="COMMISSIONER">COMMISSIONER (Executive Auditor)</option>
+                  <option value="ADMIN">ADMIN (System Administrator)</option>
+                </select>
+              </div>
+
+              <div className="pt-4 border-t border-slate-100 flex justify-end gap-3">
+                <button type="button" onClick={() => setShowAddModal(false)} className="btn-secondary">
+                  Cancel
+                </button>
+                <button type="submit" className="btn-primary">
+                  Provision User
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }

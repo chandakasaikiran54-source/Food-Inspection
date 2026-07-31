@@ -2,6 +2,7 @@
     "name": "food-inspection-monitor-frontend",
     "version": "1.0.0",
     "description": "Frontend React application for Food Inspection Monitor",
+    "type": "module",
     "private": true,
     "scripts": {
         "dev": "vite",
@@ -14,6 +15,7 @@
         "@tanstack/react-query": "^5.101.4",
         "axios": "^1.19.0",
         "dayjs": "^1.11.10",
+        "lucide-react": "^1.28.0",
         "react": "^18.2.0",
         "react-dom": "^18.2.0",
         "react-hook-form": "^7.83.0",
