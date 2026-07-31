@@ -1,0 +1,118 @@
+/* src/components/layout/Sidebar.css */
+
+.sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    width: var(--sidebar-width);
+    background-color: var(--sidebar-bg);
+    display: flex;
+    flex-direction: column;
+    z-index: 100;
+    overflow: hidden;
+    transition: width var(--transition-base);
+}
+
+/* Brand */
+.sidebar__brand {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-6) var(--space-4);
+    border-bottom: 1px solid rgba(255, 255, 255, .08);
+    min-height: var(--navbar-height);
+}
+
+.sidebar__brand-icon {
+    font-size: 1.5rem;
+}
+
+.sidebar__brand-text {
+    font-size: var(--font-size-xl);
+    font-weight: var(--font-weight-bold);
+    color: var(--sidebar-text-active);
+    letter-spacing: .05em;
+}
+
+/* Nav */
+.sidebar__nav {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: var(--space-4) var(--space-2);
+    gap: var(--space-1);
+    overflow-y: auto;
+}
+
+.sidebar__link {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-3) var(--space-3);
+    border-radius: var(--radius-md);
+    color: var(--sidebar-text);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    transition: background var(--transition-fast), color var(--transition-fast);
+    white-space: nowrap;
+}
+
+.sidebar__link:hover {
+    background: rgba(255, 255, 255, .08);
+    color: var(--sidebar-text-active);
+}
+
+.sidebar__link--active {
+    background: var(--sidebar-active-bg);
+    color: var(--sidebar-text-active);
+    font-weight: var(--font-weight-semibold);
+}
+
+.sidebar__icon {
+    font-size: 1.1rem;
+    flex-shrink: 0;
+}
+
+.sidebar__label {
+    flex: 1;
+}
+
+/* User */
+.sidebar__user {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-4);
+    border-top: 1px solid rgba(255, 255, 255, .08);
+}
+
+.sidebar__avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: var(--radius-full);
+    background: var(--color-primary);
+    color: #fff;
+    font-weight: var(--font-weight-bold);
+    font-size: var(--font-size-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.sidebar__user-info {
+    min-width: 0;
+    flex: 1;
+}
+
+.sidebar__user-name {
+    color: var(--sidebar-text-active);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+}
+
+.sidebar__user-role {
+    color: var(--color-text-muted);
+    font-size: var(--font-size-xs);
+}

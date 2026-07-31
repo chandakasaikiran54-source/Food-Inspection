@@ -1,0 +1,21 @@
+/* src/layouts/MainLayout.css */
+
+.main-layout {
+    display: flex;
+    min-height: 100vh;
+}
+
+.main-layout__body {
+    flex: 1;
+    margin-left: var(--sidebar-width);
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    transition: margin-left var(--transition-base);
+}
+
+.main-layout__content {
+    margin-top: var(--navbar-height);
+    padding: var(--space-6);
+    flex: 1;
+}
