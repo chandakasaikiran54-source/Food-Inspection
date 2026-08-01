@@ -11,6 +11,7 @@ import toast from 'react-hot-toast';
 import api from '../../services/api.js';
 import { ENDPOINTS } from '../../constants/api.js';
 import { ShieldCheck, Lock, Mail, User, Phone, CheckCircle2, Store } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext.jsx';
 
 const ROLES = ['ADMIN', 'COMMISSIONER', 'SUPERVISOR', 'INSPECTOR', 'BUSINESS'];
 const BUSINESS_TYPES = ['Restaurant', 'Hotel', 'Bakery', 'Tea Stall', 'Street Food Vendor', 'Fast Food Center', 'Sweet Shop', 'Cafe', 'Mess', 'Food Truck', 'Catering Service', 'Other'];
@@ -22,7 +23,7 @@ const schema = z.object({
     password: z.string().min(8, 'Minimum 8 characters').regex(/[A-Z]/, 'One uppercase').regex(/[0-9]/, 'One number'),
     confirmPassword: z.string().min(1, 'Confirm password'),
     role: z.enum(ROLES, { errorMap: () => ({ message: 'Select a valid role' }) }),
-    phone: z.string().regex(/^\d{10}$/, 'Exactly 10 digits', { message: 'Exactly 10 digits required' }).optional(),
+    phone: z.string().regex(/^\d{10}$/, 'Exactly 10 digits', { message: 'Exactly 10 digits required' }).optional().or(z.literal('')),
     alternatePhone: z.string().regex(/^\d{10}$/, 'Exactly 10 digits').optional().or(z.literal('')),
     department: z.string().trim().optional(),
 
@@ -46,7 +47,7 @@ const schema = z.object({
     fssaiLicenseNumber: z.string().trim().optional(),
     tradeLicense: z.string().trim().optional(),
     businessOpeningDate: z.string().optional().nullable(),
-    numberOfEmployees: z.preprocess((val) => val === '' ? undefined : Number(val), z.number().optional()),
+    numberOfEmployees: z.preprocess((val) => (val === '' || val === undefined || val === null) ? undefined : Number(val), z.number().optional()),
 }).superRefine((data, ctx) => {
     if (data.password !== data.confirmPassword) {
         ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Passwords don't match", path: ['confirmPassword'] });
@@ -69,6 +70,8 @@ const schema = z.object({
 export default function SignupPage() {
     const [showPassword, setShowPassword] = useState(false);
     const [fetchingLocation, setFetchingLocation] = useState(false);
+    const navigate = useNavigate();
+    const { setUser } = useAuth();
 
     const {
         register,
@@ -119,9 +122,14 @@ export default function SignupPage() {
     };
 
     const onSubmit = async (data) => {
+        console.log("Signup submitted", data);
         try {
-            if (!data.phone) delete data.phone;
-            if (!data.department) delete data.department;
+            // Clean up payload by dropping empty strings so explicitly optional backend schemas don't flag them as violating Enums or Regex constraints
+            Object.keys(data).forEach(key => {
+                if (data[key] === '' || data[key] === null) {
+                    delete data[key];
+                }
+            });
             const res = await api.post(ENDPOINTS.SIGNUP, data);
 
             const { accessToken, user: u } = res.data.data;
@@ -129,10 +137,26 @@ export default function SignupPage() {
             localStorage.setItem('user', JSON.stringify(u));
             api.defaults.headers.common.Authorization = `Bearer ${accessToken}`;
 
+            setUser(u);
             toast.success('Registration successful. Welcome!', { icon: '✨' });
-            window.location.replace('/');
+            navigate('/', { replace: true });
         } catch (error) {
-            toast.error(error.response?.data?.message || 'Registration failed.');
+            console.error('------- API ERROR -------', error.response?.data || error.message);
+            const errData = error.response?.data;
+
+            if (errData?.error && Array.isArray(errData.error)) {
+                // Backend Zod Validation mapped array
+                const msg = errData.error.map(e => `${e.field || ''}: ${e.message}`).join(', ');
+                toast.error(`Validation Failed: ${msg}`, { duration: 6000 });
+            } else if (error.response) {
+                // Standard backend HTTP error gracefully rejected
+                toast.error(`Error ${error.response.status}: ${errData?.message || 'Server rejected request'}`, { duration: 6000 });
+            } else if (error.request) {
+                // Connection died, timed out, or CORS severed
+                toast.error(`Network Fault (No API Response): ${error.message} - Ensure backend is running.`, { duration: 7000 });
+            } else {
+                toast.error(`Application Error: ${error.message}`);
+            }
         }
     };
 
@@ -157,7 +181,6 @@ export default function SignupPage() {
                     </h1>
                     <p className="text-white/60 text-sm leading-relaxed">Join the Food Safety Inspection framework securely mapping compliance targets accurately in real time.</p>
                 </div>
-                <p className="text-xs text-white/40 hidden lg:block">System developed under BookMyStay architectural standards</p>
             </div>
 
             {/* Right Panel - Scrollable */}
@@ -169,7 +192,7 @@ export default function SignupPage() {
                             <p className="text-sm text-gray-500 mt-1">Provide verified official credentials explicitly</p>
                         </div>
 
-                        <form onSubmit={handleSubmit(onSubmit)} className="space-y-8" noValidate>
+                        <form onSubmit={handleSubmit(onSubmit, (errs) => console.log("Form Validation Failed:", errs))} className="space-y-8" noValidate>
                             {/* ROLE SELECTION */}
                             <div className="pb-6 border-b border-gray-100">
                                 <label className="block text-sm font-bold uppercase mb-3" style={{ color: 'var(--gov-primary)' }}>Select Role / Designation</label>

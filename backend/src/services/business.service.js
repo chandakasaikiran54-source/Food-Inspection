@@ -1,6 +1,7 @@
 import businessRepository from '../repositories/business.repository.js';
 import AuditLog from '../models/AuditLog.model.js';
 import logger from '../utils/logger.js';
+import { generateSecureQR } from '../utils/qrHelper.js';
 
 class BusinessService {
     async createBusiness(data, requestedBy, meta = {}) {
@@ -14,6 +15,11 @@ class BusinessService {
             ...data,
             createdBy: requestedBy._id,
         });
+
+        const qrData = await generateSecureQR(business._id);
+        business.qrToken = qrData.qrToken;
+        business.qrImage = qrData.qrImage;
+        await business.save();
 
         await AuditLog.create({
             userId: requestedBy._id,

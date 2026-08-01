@@ -13,6 +13,7 @@ import LoginPage from '../pages/auth/LoginPage.jsx';
 import SignupPage from '../pages/auth/SignupPage.jsx';
 import UnauthorizedPage from '../pages/auth/UnauthorizedPage.jsx';
 import NotFoundPage from '../pages/NotFoundPage.jsx';
+import ScanPage from '../pages/public/ScanPage.jsx';
 
 // Protected pages
 import DashboardPage from '../pages/dashboard/DashboardPage.jsx';
@@ -34,6 +35,7 @@ const router = createBrowserRouter([
     // ─── Public ──────────────────────────────────────────────────────────────
     { path: '/login', element: <LoginPage /> },
     { path: '/signup', element: <SignupPage /> },
+    { path: '/scan/:token', element: <ScanPage /> },
     { path: '/unauthorized', element: <UnauthorizedPage /> },
     { path: '*', element: <NotFoundPage /> },
 

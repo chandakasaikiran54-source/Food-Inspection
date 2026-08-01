@@ -27,10 +27,17 @@ async function startServer() {
         console.log(`\nEnvironment:\n${envStr}\n`);
         console.log('Server Running\n');
         console.log('API Base:');
-        console.log(`http://localhost:${env.port}/api/v1\n`);
+        console.log(`Bound strictly to Environment Targets\n`);
         console.log('Health Endpoint:');
-        console.log(`http://localhost:${env.port}/api/v1/health`);
+        console.log(`[API_URL]/health`);
         console.log('------------------------------------');
+
+        if (!env.appUrl) {
+            console.warn('⚠️ WARNING: APP_URL is missing in .env! This renders QR scanning completely inactive on mobile networks.');
+        } else {
+            console.log(`QR Resolution Bound to: ${env.appUrl}`);
+            console.log('------------------------------------');
+        }
 
         // Start Background Jobs immediately and setup 24h cron execution
         schedulerService.runDailyJobs();

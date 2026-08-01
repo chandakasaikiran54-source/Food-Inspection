@@ -10,6 +10,13 @@ import { X } from 'lucide-react';
 import { AuthProvider } from './context/AuthContext.jsx';
 import router from './routes/index.jsx';
 import './styles/global.css';
+import { useOfflineSync } from './hooks/useOfflineSync.js';
+
+// Internal App wrapper to consume hooks securely
+function InnerApp() {
+    useOfflineSync();
+    return <RouterProvider router={router} />;
+}
 
 const queryClient = new QueryClient({
     defaultOptions: {
@@ -25,7 +32,7 @@ export default function App() {
     return (
         <QueryClientProvider client={queryClient}>
             <AuthProvider>
-                <RouterProvider router={router} />
+                <InnerApp />
                 <Toaster
                     position="top-right"
                     toastOptions={{

@@ -16,6 +16,7 @@ import violationRoutes from './violation.routes.js';
 import frequencyRoutes from './frequency.routes.js';
 import analyticsRoutes from './analytics.routes.js';
 import alertRoutes from './alert.routes.js';
+import qrRoutes from './qr.routes.js';
 
 const router = Router();
 
@@ -74,6 +75,7 @@ router.use('/violations', violationRoutes);
 router.use('/frequency', frequencyRoutes);
 router.use('/analytics', analyticsRoutes);
 router.use('/alerts', alertRoutes);
+router.use('/qr', qrRoutes);
 
 // Future routers (uncomment when implemented):
 // router.use('/reports',     reportRoutes);

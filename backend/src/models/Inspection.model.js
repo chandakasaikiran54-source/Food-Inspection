@@ -50,6 +50,20 @@ const inspectionSchema = new mongoose.Schema(
 
         gpsLatitude: { type: Number, default: null },
         gpsLongitude: { type: Number, default: null },
+        gpsVerified: { type: Boolean, default: false },
+        distanceMeters: { type: Number, default: null },
+
+        isLocked: { type: Boolean, default: false },
+        lockedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+        lockedAt: { type: Date, default: null },
+
+        inspectorSignature: { type: String, default: null },
+        businessOwnerSignature: { type: String, default: null },
+        photos: [{
+            url: { type: String, required: true },
+            category: { type: String, default: 'General' },
+            timestamp: { type: Date, default: Date.now }
+        }],
 
         digitalSignaturePlaceholder: { type: String, default: null },
         supervisorReview: { type: String, default: null },

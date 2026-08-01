@@ -7,6 +7,7 @@
 import userRepository from '../repositories/user.repository.js';
 import FoodBusiness from '../models/FoodBusiness.model.js';
 import { signAccessToken, signRefreshToken, verifyRefreshToken, getRefreshCookieOptions } from '../utils/jwt.js';
+import { generateSecureQR } from '../utils/qrHelper.js';
 import AuditLog from '../models/AuditLog.model.js';
 import logger from '../utils/logger.js';
 
@@ -33,24 +34,56 @@ class AuthService {
         }
 
         // Create the user organically
-        const user = await userRepository.create({
-            fullName, email, password, role, phone, department, alternatePhone, govIdType, govIdNumber
-        });
+        let user;
+        try {
+            user = await userRepository.create({
+                fullName, email, password, role, phone, department, alternatePhone, govIdType, govIdNumber
+            });
+        } catch (dbErr) {
+            console.error('------- DATABASE SAVE ERROR -------');
+            console.error(dbErr);
+            throw Object.assign(new Error('Database validation failed: ' + dbErr.message), { status: 400 });
+        }
 
         if (role === 'BUSINESS') {
-            const business = await FoodBusiness.create({
-                businessName: foodBusinessName,
-                licenseNumber: foodBusinessLicenseNumber,
-                businessType,
-                foodCategory: 'General',
-                ownerName: fullName,
-                phone,
-                email,
-                ownerId: user._id,
-                shopNumber, streetArea, villageLocality, mandal, district, state, pincode, landmark,
-                latitude, longitude, gstNumber, fssaiLicenseNumber, tradeLicense, businessOpeningDate, numberOfEmployees,
-                createdBy: user._id
-            });
+            let business;
+            try {
+                business = await FoodBusiness.create({
+                    businessName: foodBusinessName,
+                    licenseNumber: foodBusinessLicenseNumber,
+                    businessType,
+                    foodCategory: 'General',
+                    ownerName: fullName,
+                    phone,
+                    email,
+                    ownerId: user._id,
+                    shopNumber, streetArea, villageLocality, mandal, district, state, pincode, landmark,
+                    latitude, longitude, gstNumber, fssaiLicenseNumber, tradeLicense, businessOpeningDate, numberOfEmployees,
+                    createdBy: user._id
+                });
+            } catch (dbErr) {
+                console.error('------- BUSINESS SAVE ERROR -------');
+                console.error(dbErr);
+                throw Object.assign(new Error('Business Database validation failed: ' + dbErr.message), { status: 400 });
+            }
+
+            try {
+                const qrData = await generateSecureQR(business._id);
+                business.qrToken = qrData.qrToken;
+                business.qrImage = qrData.qrImage;
+                business.generatedAt = new Date();
+                await business.save();
+
+                await AuditLog.create({
+                    userId: user._id, userEmail: email, userRole: role,
+                    action: 'QR_GENERATED', module: 'BUSINESS', description: 'Initial QR code minted',
+                    metadata: { businessId: business._id },
+                    ipAddress: ip, userAgent
+                });
+            } catch (err) {
+                logger.error('Failed to generate initial QR', err);
+            }
+
             user.businessId = business._id;
             await user.save({ validateBeforeSave: false }); // Skip validation properly since it's already validated
         }
@@ -117,7 +150,7 @@ class AuthService {
     async logout(userId, { ip, userAgent }) {
         const user = await userRepository.findById(userId);
         await userRepository.updateRefreshToken(userId, null);
-        logger.info(`User logged out: ${user?.email}`);
+        logger.info(`User logged out: ${user?.email} `);
         await AuditLog.create({
             userId, userEmail: user?.email, userRole: user?.role,
             action: 'LOGOUT', module: 'AUTH', description: 'User logged out',
@@ -166,7 +199,7 @@ class AuthService {
 
         if (!user) {
             // Silently complete to prevent email enumeration effectively safely correctly!
-            logger.warn(`Password reset requested for unknown email: ${email}`);
+            logger.warn(`Password reset requested for unknown email: ${email} `);
             return;
         }
 
@@ -174,8 +207,8 @@ class AuthService {
         await user.save({ validateBeforeSave: false });
 
         // Future phase: Email Dispatcher integration natively securely here
-        const resetURL = `${env.frontendUrl || 'http://localhost:3000'}/reset-password/${resetToken}`;
-        logger.info(`Secure Reset Token Generated for ${user.email}. Link: ${resetURL}`);
+        const resetURL = `${env.frontendUrl || 'http://localhost:3000'} /reset-password/${resetToken} `;
+        logger.info(`Secure Reset Token Generated for ${user.email}.Link: ${resetURL} `);
 
         await AuditLog.create({
             userId: user._id, userEmail: user.email, userRole: user.role,

@@ -18,7 +18,7 @@ export const signupSchema = z
             .regex(/[0-9]/, 'Password must contain at least one number'),
         confirmPassword: z.string({ required_error: 'Please confirm your password' }),
         role: z.enum(ROLES, { errorMap: () => ({ message: `Role must be one of: ${ROLES.join(', ')}` }) }),
-        phone: z.string().regex(/^\d{10}$/, 'Phone number must be exactly 10 digits', { message: 'Phone number must be exactly 10 digits' }).optional(),
+        phone: z.string().regex(/^\d{10}$/, 'Phone number must be exactly 10 digits', { message: 'Phone number must be exactly 10 digits' }).optional().or(z.literal('')),
         alternatePhone: z.string().regex(/^\d{10}$/, 'Phone number must be exactly 10 digits').optional().or(z.literal('')),
         department: z.string().trim().optional(),
 
@@ -46,7 +46,7 @@ export const signupSchema = z
         fssaiLicenseNumber: z.string().trim().optional(),
         tradeLicense: z.string().trim().optional(),
         businessOpeningDate: z.string().transform(str => str ? new Date(str) : null).optional().nullable(),
-        numberOfEmployees: z.preprocess((val) => val === '' ? undefined : Number(val), z.number().optional()),
+        numberOfEmployees: z.preprocess((val) => (val === '' || val === undefined || val === null) ? undefined : Number(val), z.number().optional()),
     })
     .superRefine((data, ctx) => {
         if (data.password !== data.confirmPassword) {

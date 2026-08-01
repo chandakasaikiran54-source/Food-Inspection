@@ -10,8 +10,30 @@ const env = {
     nodeEnv: process.env.NODE_ENV || 'development',
     port: parseInt(process.env.PORT, 10) || 5000,
     appName: process.env.APP_NAME || 'Food Inspection Monitor',
-    appUrl: process.env.APP_URL || 'http://localhost:5000',
-    clientUrl: process.env.CLIENT_URL || 'http://localhost:3000',
+    appUrl: process.env.APP_URL,
+    apiUrl: process.env.API_URL,
+    allowedOrigins: (() => {
+        const origins = new Set([
+            'http://localhost:3000',
+            'http://127.0.0.1:3000',
+            process.env.CLIENT_URL,
+            process.env.CLIENT_URL_LOCAL,
+            process.env.CLIENT_URL_NETWORK
+        ]);
+
+        // Auto-normalize: Infer LAN IP out of APP_URL precisely bypassing manual configs
+        if (process.env.APP_URL) {
+            origins.add(process.env.APP_URL);
+            try { origins.add(`http://${new URL(process.env.APP_URL).hostname}:3000`); } catch (e) { }
+        }
+
+        // Auto-normalize: Infer LAN IP from API_URL perfectly mirroring Vite's default client boundary
+        if (process.env.API_URL) {
+            try { origins.add(`http://${new URL(process.env.API_URL).hostname}:3000`); } catch (e) { }
+        }
+
+        return Array.from(origins).filter(Boolean);
+    })(),
 
     // MongoDB
     mongoUri: (() => {

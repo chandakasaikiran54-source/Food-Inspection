@@ -1,6 +1,6 @@
 /**
  * src/context/AuthContext.jsx
- * Global authentication state with seamless dummy / demo login fallback.
+ * Global authentication state.
  */
 
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
@@ -88,6 +88,7 @@ export function AuthProvider({ children }) {
     login,
     logout,
     refreshUser,
+    setUser,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -27,7 +27,27 @@ app.use(helmet());
 app.set('trust proxy', 1);
 
 app.use(cors({
-    origin: env.clientUrl,
+    origin: (origin, callback) => {
+        if (!origin || env.allowedOrigins.includes(origin)) {
+            return callback(null, true);
+        }
+
+        try {
+            const originURL = new URL(origin);
+            const isAuthorizedHost = env.allowedOrigins.some(allowed => {
+                try { return new URL(allowed).hostname === originURL.hostname; }
+                catch (e) { return false; }
+            });
+
+            if (isAuthorizedHost) {
+                return callback(null, true);
+            }
+        } catch (error) {
+            // invalid URL structure quietly drops to default fallback
+        }
+
+        callback(new Error('Not allowed by CORS'));
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],

@@ -22,9 +22,14 @@ import {
   CheckCircle2,
   Calendar,
   ExternalLink,
+  QrCode,
+  Download,
+  Printer
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { INITIAL_BUSINESSES } from '../../services/mockData.js';
+import { generateQRCertificate } from '../../utils/pdfGenerator.js';
+import api from '../../services/api.js';
 
 export default function BusinessesPage() {
   const [searchParams] = useSearchParams();
@@ -35,7 +40,7 @@ export default function BusinessesPage() {
   const [riskFilter, setRiskFilter] = useState('ALL');
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [viewMode, setViewMode] = useState('table'); // 'table' | 'grid'
-  
+
   const [selectedBusiness, setSelectedBusiness] = useState(null);
   const [showAddModal, setShowAddModal] = useState(false);
 
@@ -66,45 +71,73 @@ export default function BusinessesPage() {
     });
   }, [businesses, searchTerm, riskFilter, statusFilter]);
 
-  const handleAddSubmit = (e) => {
+  const handleAddSubmit = async (e) => {
     e.preventDefault();
     if (!newBiz.name || !newBiz.owner) {
       toast.error('Please fill in required fields.');
       return;
     }
 
-    const created = {
-      id: `BUS-${Date.now().toString().slice(-4)}`,
-      name: newBiz.name,
-      type: newBiz.type,
-      licenseNo: `LIC-2026-${Math.floor(1000 + Math.random() * 9000)}`,
-      owner: newBiz.owner,
-      email: newBiz.email || 'contact@business.com',
-      phone: newBiz.phone || '+1 (555) 000-1111',
-      address: newBiz.address || 'Central District Street',
-      district: newBiz.district,
-      riskLevel: newBiz.riskLevel,
-      status: 'ACTIVE',
-      healthScore: 95,
-      grade: 'A',
-      lastInspectionDate: new Date().toISOString().split('T')[0],
-      nextInspectionDate: '2026-11-01',
-      totalInspections: 1,
-    };
+    try {
+      const payload = {
+        businessName: newBiz.name,
+        businessType: newBiz.type,
+        licenseNumber: `LIC-2026-${Math.floor(1000 + Math.random() * 9000)}`,
+        foodCategory: 'Restaurant (Generic)',
+        ownerName: newBiz.owner,
+        email: newBiz.email || 'contact@business.com',
+        phone: newBiz.phone || '0000000000',
+        address: newBiz.address || 'Central District Street',
+        streetArea: newBiz.address || 'Central Street',
+        villageLocality: 'Central',
+        mandal: 'GVMC Central',
+        district: newBiz.district,
+        state: 'Andhra Pradesh',
+        pincode: '530001',
+        ward: 'Central Ward',
+        zone: 'Zone 2',
+        latitude: 17.6868,
+        longitude: 83.2185,
+        licenseIssueDate: new Date().toISOString(),
+        licenseExpiryDate: new Date(Date.now() + 31536000000).toISOString(),
+        businessStatus: 'ACTIVE',
+        riskCategory: newBiz.riskLevel
+      };
 
-    setBusinesses([created, ...businesses]);
-    setShowAddModal(false);
-    toast.success(`Registered new food establishment: ${newBiz.name}`);
-    setNewBiz({
-      name: '',
-      type: 'Fine Dining Restaurant',
-      owner: '',
-      email: '',
-      phone: '',
-      address: '',
-      district: 'Downtown District',
-      riskLevel: 'HIGH',
-    });
+      const { data } = await api.post('/businesses', payload);
+      const savedBusiness = data.data;
+
+      // Transform backend model to frontend schema for immediate UI rendering without fetching all
+      const created = {
+        id: savedBusiness._id,
+        _id: savedBusiness._id,
+        name: savedBusiness.businessName,
+        type: savedBusiness.businessType,
+        licenseNo: savedBusiness.licenseNumber,
+        owner: savedBusiness.ownerName,
+        email: savedBusiness.email,
+        phone: savedBusiness.phone,
+        address: savedBusiness.address,
+        district: savedBusiness.district,
+        riskLevel: savedBusiness.riskCategory,
+        status: savedBusiness.businessStatus,
+        healthScore: savedBusiness.healthScore,
+        grade: savedBusiness.grade,
+        lastInspectionDate: savedBusiness.lastInspectionDate ? new Date(savedBusiness.lastInspectionDate).toISOString().split('T')[0] : 'N/A',
+        totalInspections: savedBusiness.totalInspections,
+        qrToken: savedBusiness.qrToken
+      };
+
+      setBusinesses([created, ...businesses]);
+      setShowAddModal(false);
+      toast.success(`Registered new food establishment: ${created.name}`);
+      setNewBiz({
+        name: '', type: 'Fine Dining Restaurant', owner: '', email: '', phone: '',
+        address: '', district: 'Downtown District', riskLevel: 'HIGH',
+      });
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to register business');
+    }
   };
 
   return (
@@ -125,17 +158,15 @@ export default function BusinessesPage() {
           <div className="bg-slate-100 p-1 rounded-xl border border-slate-200 flex items-center gap-1">
             <button
               onClick={() => setViewMode('table')}
-              className={`p-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                viewMode === 'table' ? 'bg-white text-indigo-600 shadow-xs font-bold' : 'text-slate-500 hover:text-slate-800'
-              }`}
+              className={`p-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${viewMode === 'table' ? 'bg-white text-indigo-600 shadow-xs font-bold' : 'text-slate-500 hover:text-slate-800'
+                }`}
             >
               <List className="w-4 h-4" />
             </button>
             <button
               onClick={() => setViewMode('grid')}
-              className={`p-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                viewMode === 'grid' ? 'bg-white text-indigo-600 shadow-xs font-bold' : 'text-slate-500 hover:text-slate-800'
-              }`}
+              className={`p-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${viewMode === 'grid' ? 'bg-white text-indigo-600 shadow-xs font-bold' : 'text-slate-500 hover:text-slate-800'
+                }`}
             >
               <LayoutGrid className="w-4 h-4" />
             </button>
@@ -228,13 +259,12 @@ export default function BusinessesPage() {
                     <td className="text-xs text-slate-600">{b.district}</td>
                     <td>
                       <span
-                        className={`badge ${
-                          b.riskLevel === 'HIGH'
-                            ? 'badge-danger'
-                            : b.riskLevel === 'MEDIUM'
+                        className={`badge ${b.riskLevel === 'HIGH'
+                          ? 'badge-danger'
+                          : b.riskLevel === 'MEDIUM'
                             ? 'badge-warning'
                             : 'badge-success'
-                        }`}
+                          }`}
                       >
                         {b.riskLevel} RISK
                       </span>
@@ -242,13 +272,12 @@ export default function BusinessesPage() {
                     <td>
                       <div className="flex items-center gap-2">
                         <span
-                          className={`text-sm font-extrabold ${
-                            b.healthScore >= 90
-                              ? 'text-emerald-600'
-                              : b.healthScore >= 75
+                          className={`text-sm font-extrabold ${b.healthScore >= 90
+                            ? 'text-emerald-600'
+                            : b.healthScore >= 75
                               ? 'text-amber-600'
                               : 'text-rose-600'
-                          }`}
+                            }`}
                         >
                           {b.healthScore}/100
                         </span>
@@ -259,13 +288,12 @@ export default function BusinessesPage() {
                     </td>
                     <td>
                       <span
-                        className={`badge ${
-                          b.status === 'ACTIVE'
-                            ? 'badge-success'
-                            : b.status === 'WARNING'
+                        className={`badge ${b.status === 'ACTIVE'
+                          ? 'badge-success'
+                          : b.status === 'WARNING'
                             ? 'badge-warning'
                             : 'badge-danger'
-                        }`}
+                          }`}
                       >
                         {b.status}
                       </span>
@@ -294,13 +322,12 @@ export default function BusinessesPage() {
               <div className="space-y-2">
                 <div className="flex items-start justify-between">
                   <span
-                    className={`badge ${
-                      b.riskLevel === 'HIGH'
-                        ? 'badge-danger'
-                        : b.riskLevel === 'MEDIUM'
+                    className={`badge ${b.riskLevel === 'HIGH'
+                      ? 'badge-danger'
+                      : b.riskLevel === 'MEDIUM'
                         ? 'badge-warning'
                         : 'badge-success'
-                    }`}
+                      }`}
                   >
                     {b.riskLevel} RISK
                   </span>
@@ -316,13 +343,12 @@ export default function BusinessesPage() {
 
               <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
                 <span
-                  className={`badge ${
-                    b.status === 'ACTIVE'
-                      ? 'badge-success'
-                      : b.status === 'WARNING'
+                  className={`badge ${b.status === 'ACTIVE'
+                    ? 'badge-success'
+                    : b.status === 'WARNING'
                       ? 'badge-warning'
                       : 'badge-danger'
-                  }`}
+                    }`}
                 >
                   {b.status}
                 </span>
@@ -403,7 +429,21 @@ export default function BusinessesPage() {
               </div>
             </div>
 
-            <div className="pt-4 border-t border-slate-100 flex justify-end gap-3">
+            <div className="pt-4 border-t border-slate-100 flex justify-between items-center flex-wrap gap-4">
+              <div className="flex gap-2">
+                <button onClick={() => toast.success('QR Generated')} className="btn-secondary flex items-center gap-2">
+                  <QrCode className="w-4 h-4" /> Generate QR
+                </button>
+                <button onClick={() => {
+                  toast.promise(generateQRCertificate(selectedBusiness), {
+                    loading: 'Generating official certificate...',
+                    success: 'Certificate printed successfully',
+                    error: 'Failed to generate certificate'
+                  });
+                }} className="btn-ghost flex items-center gap-2 border">
+                  <Printer className="w-4 h-4" /> Print Certificate
+                </button>
+              </div>
               <button onClick={() => setSelectedBusiness(null)} className="btn-secondary">
                 Close Record
               </button>

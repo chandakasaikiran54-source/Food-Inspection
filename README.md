@@ -102,6 +102,17 @@ cp backend/.env.example backend/.env
 
 See [`backend/.env.example`](./backend/.env.example) for all required variables.
 
+### 📱 Testing QR Codes on Mobile Devices
+The QR Generation engine requires a properly configured `APP_URL` variable to operate outside of a web browser context. `localhost` is completely forbidden on mobile devices and causes `ERR_CONNECTION_REFUSED`. 
+
+To scan QR codes from a mobile device organically:
+1. Connect your PC and Mobile Device to same Wi-Fi network.
+2. Find your PC's IP Address (e.g., `192.168.1.5`).
+3. Set `APP_URL=http://192.168.1.5:5000` (or `3000` depending on frontend proxy targets) inside your backend `.env`.
+4. Scan the newly generated QR Code on your Mobile Device.
+
+*For external hackathon presentations over the internet, consider leveraging NGROK or LocalTunnel mapped onto your frontend instances and updating `APP_URL` correspondingly.*
+
 ---
 
 ## ▶️ Running the Project

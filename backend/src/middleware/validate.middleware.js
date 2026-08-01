@@ -18,8 +18,11 @@ const validate = (schema, source = 'body') => (req, res, next) => {
                 field: e.path.join('.'),
                 message: e.message,
             }));
+            console.error('------- VALIDATION FAILURE -------');
+            console.error(JSON.stringify(errors, null, 2));
             return errorResponse(res, 'Validation failed', 422, errors);
         }
+        console.error('Unhandled Validation Middleware Error:', err);
         next(err);
     }
 };

@@ -102,11 +102,6 @@ export default function LoginPage() {
             </span>
           </h1>
 
-          <p className="text-white/60 text-sm leading-relaxed">
-            Authorized access portal for GVMC Public Health Officers. Real-time food business inspection
-            monitoring, hazard risk scoring, and compliance reporting for Greater Visakhapatnam.
-          </p>
-
           {/* Stat Cards */}
           <div className="grid grid-cols-3 gap-4 pt-2">
             {[

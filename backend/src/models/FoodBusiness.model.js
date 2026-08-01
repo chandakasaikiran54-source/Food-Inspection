@@ -46,7 +46,10 @@ const foodBusinessSchema = new mongoose.Schema(
         riskCategory: { type: String, enum: RISK_CATEGORIES, default: 'MEDIUM' },
         lastInspectionDate: { type: Date, default: null },
         nextDueDate: { type: Date, default: null },
-        qrCode: { type: String, default: null },
+        qrToken: { type: String, unique: true, sparse: true, default: null },
+        qrImage: { type: String, default: null },
+        qrVersion: { type: Number, default: 1 },
+        lastRegenerated: { type: Date, default: null },
 
         createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
         updatedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },

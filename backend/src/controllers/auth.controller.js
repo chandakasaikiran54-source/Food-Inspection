@@ -14,6 +14,8 @@ class AuthController {
      * POST /api/v1/auth/signup
      */
     async signup(req, res, next) {
+        console.log('------- INCOMING SIGNUP PAYLOAD -------');
+        console.log(JSON.stringify(req.body, null, 2));
         try {
             const { accessToken, refreshToken, user } = await authService.signup(req.body, {
                 ip: req.ip,

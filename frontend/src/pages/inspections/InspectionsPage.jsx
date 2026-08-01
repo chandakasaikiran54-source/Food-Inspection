@@ -21,9 +21,12 @@ import {
   X,
   ShieldCheck,
   AlertCircle,
+  Scan,
+  MapPin
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { INITIAL_INSPECTIONS, INITIAL_BUSINESSES, INITIAL_INSPECTORS } from '../../services/mockData.js';
+import QRScanner from '../../components/inspections/QRScanner.jsx';
 
 export default function InspectionsPage() {
   const [searchParams] = useSearchParams();
@@ -32,9 +35,75 @@ export default function InspectionsPage() {
   const [inspections, setInspections] = useState(INITIAL_INSPECTIONS);
   const [activeTab, setActiveTab] = useState('ALL'); // 'ALL' | 'PASSED' | 'FAILED' | 'WARNING'
   const [searchTerm, setSearchTerm] = useState('');
-  
+
   const [selectedInspection, setSelectedInspection] = useState(null);
   const [showScheduleModal, setShowScheduleModal] = useState(autoNewAction);
+  const [showScanner, setShowScanner] = useState(false);
+
+  // GPS Distance Calculation (Haversine formula)
+  const calculateDistance = (lat1, lon1, lat2, lon2) => {
+    const R = 6371e3; // metres
+    const p1 = lat1 * Math.PI / 180;
+    const p2 = lat2 * Math.PI / 180;
+    const dp = (lat2 - lat1) * Math.PI / 180;
+    const dl = (lon2 - lon1) * Math.PI / 180;
+
+    const a = Math.sin(dp / 2) * Math.sin(dp / 2) +
+      Math.cos(p1) * Math.cos(p2) *
+      Math.sin(dl / 2) * Math.sin(dl / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+    return R * c;
+  };
+
+  const handleScanSuccess = async (token) => {
+    setShowScanner(false);
+    const loadingToast = toast.loading('Authenticating via QR...');
+
+    try {
+      // In actual app: const resp = await api.get(`/qr/secure/${token}`);
+      // Using mock payload for frontend demonstration
+      const mockBiz = INITIAL_BUSINESSES[0];
+
+      toast.success(`Business Verified: ${mockBiz.name}`, { id: loadingToast });
+      toast.loading('Acquiring GPS location...', { id: loadingToast });
+
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          // Mock coordinates checking
+          const distance = calculateDistance(
+            position.coords.latitude,
+            position.coords.longitude,
+            mockBiz.latitude || 17.6868, // sample vizag coords
+            mockBiz.longitude || 83.2185
+          );
+
+          toast.dismiss(loadingToast);
+
+          if (distance <= 100) {
+            toast.success(`Location verified. Distance: ${Math.round(distance)}m`);
+            // Proceed to open active inspection
+            setNewInsp({ ...newInsp, businessId: mockBiz.id, type: 'Surprise Field Inspection' });
+            setShowScheduleModal(true);
+          } else {
+            // Beyond 100 meters - trigger Override Warning
+            toast.error(`GPS Verification Failed. You are ${Math.round(distance)}m away from registered location.`, { duration: 6000 });
+            if (window.confirm('GPS proximity test failed (>100m). Override warning to proceed with Inspector authority?')) {
+              setNewInsp({ ...newInsp, businessId: mockBiz.id, type: 'Surprise Field Inspection (OVERRIDE)' });
+              setShowScheduleModal(true);
+            }
+          }
+        },
+        (err) => {
+          toast.error('Could not access GPS. Hardware location is required.', { id: loadingToast });
+        },
+        { enableHighAccuracy: true }
+      );
+
+    } catch (e) {
+      toast.error('Invalid or Expired QR Token', { id: loadingToast });
+    }
+  };
 
   // New Inspection Form State
   const [newInsp, setNewInsp] = useState({
@@ -96,12 +165,20 @@ export default function InspectionsPage() {
           </p>
         </div>
 
-        <button
-          onClick={() => setShowScheduleModal(true)}
-          className="btn-primary shadow-indigo-600/30"
-        >
-          <Plus className="w-4 h-4" /> Schedule New Audit
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setShowScanner(true)}
+            className="btn-secondary shadow-indigo-600/30 font-bold border-indigo-600 text-indigo-700"
+          >
+            <Scan className="w-4 h-4" /> Scan QR to Inspect
+          </button>
+          <button
+            onClick={() => setShowScheduleModal(true)}
+            className="btn-primary shadow-indigo-600/30"
+          >
+            <Plus className="w-4 h-4" /> Schedule New Audit
+          </button>
+        </div>
       </div>
 
       {/* Tabs & Search Filter */}
@@ -118,11 +195,10 @@ export default function InspectionsPage() {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
-                  activeTab === tab.id
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${activeTab === tab.id
                     ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-600/20'
                     : 'bg-slate-100 text-slate-600 hover:bg-slate-200/80'
-                }`}
+                  }`}
               >
                 {tab.label}
               </button>
@@ -176,13 +252,12 @@ export default function InspectionsPage() {
                   <td>
                     <div className="flex items-center gap-1.5">
                       <span
-                        className={`text-sm font-extrabold ${
-                          insp.score >= 90
+                        className={`text-sm font-extrabold ${insp.score >= 90
                             ? 'text-emerald-600'
                             : insp.score >= 75
-                            ? 'text-amber-600'
-                            : 'text-rose-600'
-                        }`}
+                              ? 'text-amber-600'
+                              : 'text-rose-600'
+                          }`}
                       >
                         {insp.score}/100
                       </span>
@@ -193,13 +268,12 @@ export default function InspectionsPage() {
                   </td>
                   <td>
                     <span
-                      className={`badge ${
-                        insp.status === 'PASSED'
+                      className={`badge ${insp.status === 'PASSED'
                           ? 'badge-success'
                           : insp.status === 'WARNING'
-                          ? 'badge-warning'
-                          : 'badge-danger'
-                      }`}
+                            ? 'badge-warning'
+                            : 'badge-danger'
+                        }`}
                     >
                       {insp.status}
                     </span>
@@ -284,13 +358,12 @@ export default function InspectionsPage() {
                       className="p-3 rounded-xl border border-slate-200 bg-white text-xs flex items-start gap-3"
                     >
                       <span
-                        className={`badge ${
-                          v.severity === 'CRITICAL'
+                        className={`badge ${v.severity === 'CRITICAL'
                             ? 'badge-danger'
                             : v.severity === 'MAJOR'
-                            ? 'badge-warning'
-                            : 'badge-info'
-                        }`}
+                              ? 'badge-warning'
+                              : 'badge-info'
+                          }`}
                       >
                         {v.severity}
                       </span>
@@ -411,6 +484,14 @@ export default function InspectionsPage() {
             </form>
           </div>
         </div>
+      )}
+
+      {/* Internal QR Scanner Mount */}
+      {showScanner && (
+        <QRScanner
+          onClose={() => setShowScanner(false)}
+          onScanSuccess={handleScanSuccess}
+        />
       )}
     </div>
   );
